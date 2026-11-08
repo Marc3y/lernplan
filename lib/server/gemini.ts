@@ -10,6 +10,17 @@ const models = () =>
     .filter(Boolean);
 const base = () => process.env.GEMINI_BASE || "https://generativelanguage.googleapis.com/v1beta";
 
+declare global {
+  var lernplanModelsDown: Map<string, number> | undefined;
+}
+
+export interface Content {
+  role: "user" | "model";
+  parts: { text: string }[];
+}
+
+type OpenResult = { ok: true; stream: ReadableStream<Uint8Array> } | { ok: false; reason: string };
+
 const downUntil = globalThis.lernplanModelsDown || (globalThis.lernplanModelsDown = new Map());
 
 export function modelOrder() {
@@ -19,10 +30,10 @@ export function modelOrder() {
   return up.length ? up : all;
 }
 
-export const markUp = model => downUntil.delete(model);
-export const markDown = model => downUntil.set(model, Date.now() + MODEL_COOLDOWN_MS);
+export const markUp = (model: string) => downUntil.delete(model);
+export const markDown = (model: string) => downUntil.set(model, Date.now() + MODEL_COOLDOWN_MS);
 
-async function* textChunks(body) {
+async function* textChunks(body: ReadableStream<Uint8Array>): AsyncGenerator<string, void> {
   const reader = body.getReader();
   const dec = new TextDecoder();
   let buf = "";
@@ -38,7 +49,7 @@ async function* textChunks(body) {
         if (!line.startsWith("data:")) continue;
         let text = "";
         try {
-          const parts = JSON.parse(line.slice(5)).candidates?.[0]?.content?.parts || [];
+          const parts: { text?: string; thought?: boolean }[] = JSON.parse(line.slice(5)).candidates?.[0]?.content?.parts || [];
           text = parts.filter(p => !p.thought).map(p => p.text || "").join("");
         } catch {}
         if (text) yield text;
@@ -49,7 +60,7 @@ async function* textChunks(body) {
   }
 }
 
-export async function openModel(model, contents, clientSignal) {
+export async function openModel(model: string, contents: Content[], clientSignal: AbortSignal): Promise<OpenResult> {
   const ctl = new AbortController();
   const onGone = () => ctl.abort();
   clientSignal.addEventListener("abort", onGone);
@@ -79,14 +90,14 @@ export async function openModel(model, contents, clientSignal) {
     const stream = new ReadableStream({
       async start(controller) {
         const enc = new TextEncoder();
-        controller.enqueue(enc.encode(first.value));
+        controller.enqueue(enc.encode(first.value as string));
         try {
           for (;;) {
             clearTimeout(timer);
             timer = setTimeout(() => ctl.abort(), STREAM_IDLE_MS);
-            const { done, value } = await chunks.next();
-            if (done) break;
-            controller.enqueue(enc.encode(value));
+            const next = await chunks.next();
+            if (next.done) break;
+            controller.enqueue(enc.encode(next.value as string));
           }
         } catch {}
         finish();

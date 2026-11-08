@@ -1,13 +1,13 @@
-import { db, authName } from "@/lib/server/store";
+import { db, authName, type StreamClient } from "@/lib/server/store";
 import { json } from "@/lib/server/http";
 
 export const dynamic = "force-dynamic";
 
-export function GET(req) {
+export function GET(req: Request) {
   const me = authName(req);
   if (!me) return json(401, { error: "Bitte anmelden" });
   const enc = new TextEncoder();
-  let client;
+  let client: StreamClient;
   const stream = new ReadableStream({
     start(controller) {
       client = {

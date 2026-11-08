@@ -3,7 +3,7 @@ import { json } from "@/lib/server/http";
 
 export const dynamic = "force-dynamic";
 
-export function GET(req) {
+export function GET(req: Request) {
   if (!authName(req)) return json(401, { error: "Bitte anmelden" });
   return json(200, db.state);
 }

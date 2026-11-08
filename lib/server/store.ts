@@ -10,10 +10,66 @@ const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
 const MAX_EVENTS = 600;
 const DEDUPE_MS = 15 * 60 * 1000;
 
-export const MAIN_USERS = { Marcus: "MARCUS_PASSWORD", Youssef: "YOUSSEF_PASSWORD" };
+export interface User {
+  salt: string;
+  hash: string;
+  main: boolean;
+  created: number;
+}
+
+export interface Session {
+  name: string;
+  ts: number;
+}
+
+export interface StateEntry {
+  state: string;
+  ts: number;
+}
+
+export interface Event {
+  id: string;
+  from: string;
+  to: string;
+  key: string;
+  type: string;
+  text: string;
+  view: string;
+  anchor: string;
+  ts: number;
+  read: boolean;
+}
+
+export interface EventInput {
+  key?: unknown;
+  type?: unknown;
+  text?: unknown;
+  view?: unknown;
+  anchor?: unknown;
+  remove?: boolean;
+}
+
+export interface StreamClient {
+  who: string;
+  send(msg: string): void;
+}
+
+interface Db {
+  state: Record<string, StateEntry>;
+  events: Event[];
+  users: Record<string, User>;
+  sessions: Record<string, Session>;
+  streams: Set<StreamClient>;
+}
+
+declare global {
+  var lernplanDb: Db | undefined;
+}
+
+export const MAIN_USERS: Record<string, string> = { Marcus: "MARCUS_PASSWORD", Youssef: "YOUSSEF_PASSWORD" };
 export const NAME_RE = /^[A-Za-zÄÖÜäöüß0-9_.-]{3,20}$/;
 
-function readJson(file, fallback) {
+function readJson<T>(file: string, fallback: T): T {
   try {
     return JSON.parse(fs.readFileSync(file, "utf8"));
   } catch {
@@ -21,26 +77,26 @@ function readJson(file, fallback) {
   }
 }
 
-function writeJson(file, data) {
+function writeJson(file: string, data: unknown) {
   const tmp = file + ".tmp";
   fs.writeFileSync(tmp, JSON.stringify(data));
   fs.renameSync(tmp, file);
 }
 
-function hashPw(pw, salt) {
+function hashPw(pw: string, salt: string) {
   return crypto.scryptSync(String(pw), salt, 32).toString("hex");
 }
 
-export function checkPw(pw, u) {
+export function checkPw(pw: string, u: User | undefined) {
   if (!u) return false;
   const a = Buffer.from(hashPw(pw, u.salt), "hex");
   const b = Buffer.from(u.hash, "hex");
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-function load() {
+function load(): Db {
   fs.mkdirSync(DATA_DIR, { recursive: true });
-  const db = {
+  const db: Db = {
     state: readJson(STATE_FILE, {}),
     events: readJson(EVENTS_FILE, []),
     users: readJson(USERS_FILE, {}),
@@ -63,7 +119,7 @@ function load() {
   return db;
 }
 
-function setPw(db, name, pw, main) {
+function setPw(db: Db, name: string, pw: string, main: boolean) {
   const salt = crypto.randomBytes(16).toString("hex");
   const prev = db.users[name];
   db.users[name] = { ...prev, salt, hash: hashPw(pw, salt), main: !!main, created: prev?.created || Date.now() };
@@ -71,41 +127,41 @@ function setPw(db, name, pw, main) {
 
 export const db = globalThis.lernplanDb || (globalThis.lernplanDb = load());
 
-export function findUser(name) {
+export function findUser(name: unknown) {
   const low = String(name || "").trim().toLowerCase();
   return Object.keys(db.users).find(n => n.toLowerCase() === low) || null;
 }
 
-export function createUser(name, pw) {
+export function createUser(name: string, pw: string) {
   setPw(db, name, pw, false);
   writeJson(USERS_FILE, db.users);
 }
 
-export function newSession(name) {
+export function newSession(name: string) {
   const token = crypto.randomBytes(24).toString("base64url");
   db.sessions[token] = { name, ts: Date.now() };
   writeJson(SESSIONS_FILE, db.sessions);
   return token;
 }
 
-export function bearer(req) {
+export function bearer(req: Request) {
   const h = req.headers.get("authorization") || "";
   return h.startsWith("Bearer ") ? h.slice(7) : "";
 }
 
-export function endSession(token) {
+export function endSession(token: string) {
   if (!token || !db.sessions[token]) return;
   delete db.sessions[token];
   writeJson(SESSIONS_FILE, db.sessions);
 }
 
-export function authName(req) {
+export function authName(req: Request): string | null {
   const token = bearer(req) || new URL(req.url).searchParams.get("token") || "";
   const s = token && db.sessions[token];
   return s && db.users[s.name] ? s.name : null;
 }
 
-export function saveState(who, entry) {
+export function saveState(who: string, entry: StateEntry) {
   db.state[who] = entry;
   writeJson(STATE_FILE, db.state);
 }
@@ -116,14 +172,14 @@ export function saveEvents() {
   writeJson(EVENTS_FILE, db.events);
 }
 
-export function broadcast(type, data, onlyWho) {
+export function broadcast(type: string, data: unknown, onlyWho?: string) {
   const msg = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
   for (const c of db.streams) if (!onlyWho || c.who === onlyWho) c.send(msg);
 }
 
-const str = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
+const str = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : "");
 
-export function addEvents(from, list) {
+export function addEvents(from: string, list: EventInput[]) {
   const recipients = Object.keys(db.users).filter(n => n !== from);
   const now = Date.now();
   let changed = false;
@@ -141,7 +197,7 @@ export function addEvents(from, list) {
         }
         continue;
       }
-      const ev = {
+      const ev: Event = {
         id: now.toString(36) + crypto.randomBytes(4).toString("hex"),
         from,
         to,

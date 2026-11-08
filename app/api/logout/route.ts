@@ -3,7 +3,7 @@ import { json } from "@/lib/server/http";
 
 export const dynamic = "force-dynamic";
 
-export function POST(req) {
+export function POST(req: Request) {
   endSession(bearer(req));
   return json(200, { ok: true });
 }

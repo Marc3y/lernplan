@@ -4,6 +4,7 @@ import { FORMULAS, SYMBOLS, ANALOG, KILLERS } from "./data/formulas";
 import { LESSONS } from "./data/lessons";
 import { TIPS, REVIEW_TIPS, EXAM_TIPS } from "./data/tips";
 import { V } from "./data/videos";
+import type { Progress, View, Unit, Solver, PersonRow } from "./types";
 
 const ON_CLAUDE = !!(window.claude && window.claude.use);
 const SERVER = !ON_CLAUDE && /^https?:$/.test(location.protocol);
@@ -94,7 +95,7 @@ function setWho(p) {
   notifs = []; unread = 0; closeNc(); bellVisible(); renderBell(); loadNotifs(); connectStream();
 }
 
-function dayStats(d, st) {
+function dayStats(d, st?: Progress) {
   st = st || S;
   let tot = 0, got = 0;
   d.blocks.forEach((_, i) => { tot++; if (st.b[d.n + "." + i]) got++; });
@@ -102,7 +103,7 @@ function dayStats(d, st) {
   d.ex.forEach((e, i) => { if (e.off) return; tot++; if (st.x[d.n + "." + i] === "ok") got++; });
   return { tot, got, pct: tot ? Math.round(got / tot * 100) : 0 };
 }
-function allStats(st) {
+function allStats(st?: Progress) {
   st = st || S;
   let tot = 0, got = 0, exOk = 0, exTot = 0, ck = 0, ckTot = 0;
   DAYS.forEach(d => { const s = dayStats(d, st); tot += s.tot; got += s.got; d.ex.forEach((e, i) => { if (e.off) return; exTot++; if (st.x[d.n + "." + i] === "ok") exOk++; }); d.checks.forEach((_, i) => { ckTot++; if (st.c[d.n + "." + i]) ck++; }); });
@@ -113,9 +114,9 @@ function todayIdx() {
   const now = new Date(); const key = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
   return DAYS.findIndex(d => d.date === key);
 }
-function daysLeft() { const now = new Date(); now.setHours(0, 0, 0, 0); return Math.round((KA - now) / 86400000); }
+function daysLeft() { const now = new Date(); now.setHours(0, 0, 0, 0); return Math.round((KA.getTime() - now.getTime()) / 86400000); }
 
-const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, html?: string | number): HTMLElementTagNameMap[K] => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = String(html); return e; };
 const TAGNAME = { basic: "Basics", skript: "Skript", ueben: "Üben", test: "Test" };
 function waveSvg(seed) {
   const amp = 14 + (seed % 5) * 3, k = 2 + (seed % 3);
@@ -135,7 +136,7 @@ function fmt(n) { return String(+n.toPrecision(4)).replace(".", ","); }
 const acctBtn = document.getElementById("acctBtn"), acctMenu = document.getElementById("acctMenu"), picker = document.getElementById("picker");
 function hueOf(name) { let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; }
 function avStyle(p) { if (PEOPLE.includes(p)) return ""; const h = hueOf(p); return ' style="background:linear-gradient(145deg,hsl(' + h + ' 70% 55%),hsl(' + ((h + 40) % 360) + ' 70% 42%))"'; }
-function avatar(p, cls) { return '<span class="av ' + (cls || "") + (PEOPLE.includes(p) ? " av-" + p.toLowerCase() : " av-guest") + '"' + avStyle(p) + '>' + p[0].toUpperCase() + '</span>'; }
+function avatar(p: string, cls?: string) { return '<span class="av ' + (cls || "") + (PEOPLE.includes(p) ? " av-" + p.toLowerCase() : " av-guest") + '"' + avStyle(p) + '>' + p[0].toUpperCase() + '</span>'; }
 function personPct(p) { const st = p === who ? S : partner[p]; return st ? allStats(st).pct : null; }
 function renderAccount() {
   const av = document.getElementById("acctAv");
@@ -160,12 +161,12 @@ function renderAccount() {
 function openMenu() { renderAccount(); acctMenu.classList.add("open"); acctMenu.setAttribute("aria-hidden", "false"); acctBtn.setAttribute("aria-expanded", "true"); }
 function closeMenu() { acctMenu.classList.remove("open"); acctMenu.setAttribute("aria-hidden", "true"); acctBtn.setAttribute("aria-expanded", "false"); }
 acctBtn.addEventListener("click", ev => { ev.stopPropagation(); if (!who) { showPicker(); return; } acctMenu.classList.contains("open") ? closeMenu() : openMenu(); });
-document.addEventListener("click", ev => { if (acctMenu.classList.contains("open") && !ev.target.closest(".acct")) closeMenu(); });
+document.addEventListener("click", ev => { if (acctMenu.classList.contains("open") && !(ev.target as Element).closest(".acct")) closeMenu(); });
 document.addEventListener("keydown", ev => { if (ev.key === "Escape") { closeMenu(); if (!picker.hidden && who) hidePicker(); } });
 
 function hidePicker() { picker.classList.remove("open"); setTimeout(() => { if (!picker.classList.contains("open")) picker.hidden = true; }, 260); }
 let guestMode = "login";
-function showPicker(mode, person) {
+function showPicker(mode?: string, person?: string) {
   mode = mode || "start";
   const body = document.getElementById("pickBody");
   const close = who ? '<button class="x pick-x" type="button" id="pickClose" aria-label="Schließen">×</button>' : "";
@@ -188,9 +189,9 @@ function showPicker(mode, person) {
     body.innerHTML = close + avatar(person, "av-lg") + '<h2 id="pickTitle">Hi ' + person + '</h2><p>Gib dein Passwort ein. Auf diesem Gerät bleibst du danach angemeldet.</p>' +
       '<form class="pick-form" id="pickForm"><input type="password" id="pickPw" autocomplete="current-password" placeholder="Passwort" aria-label="Passwort für ' + person + '" inputmode="numeric"><p class="pick-err" id="pickErr" hidden></p><button class="cta" type="submit">Anmelden</button></form>' +
       '<button class="pick-back" type="button" id="pickBack">Zurück</button>';
-    body.querySelector("#pickForm").addEventListener("submit", ev => { ev.preventDefault(); doAuth("login", person, body.querySelector("#pickPw").value); });
+    body.querySelector("#pickForm").addEventListener("submit", ev => { ev.preventDefault(); doAuth("login", person, body.querySelector<HTMLInputElement>("#pickPw").value); });
     body.querySelector("#pickBack").addEventListener("click", () => showPicker("start"));
-    setTimeout(() => { const i = body.querySelector("#pickPw"); if (i) i.focus(); }, 80);
+    setTimeout(() => { const i = body.querySelector<HTMLInputElement>("#pickPw"); if (i) i.focus(); }, 80);
   } else {
     const reg = guestMode === "register";
     body.innerHTML = close + '<h2 id="pickTitle">' + (reg ? "Gastkonto erstellen" : "Mit Benutzername anmelden") + '</h2><p>' + (reg ? "Für alle, die den Lernplan auch machen wollen. Such dir einen Benutzernamen aus, den es noch nicht gibt." : "Für Gastkonten. Marcus und Youssef melden sich oben auf der Startseite an.") + '</p>' +
@@ -200,15 +201,15 @@ function showPicker(mode, person) {
       (reg ? '<input type="password" id="pickPw2" autocomplete="new-password" placeholder="Passwort wiederholen" aria-label="Passwort wiederholen">' : "") +
       '<p class="pick-err" id="pickErr" hidden></p><button class="cta" type="submit">' + (reg ? "Konto erstellen" : "Anmelden") + '</button></form>' +
       '<button class="pick-back" type="button" id="pickBack">Zurück zu Marcus und Youssef</button>';
-    body.querySelectorAll(".pick-seg button").forEach(b => b.addEventListener("click", () => { guestMode = b.dataset.g; showPicker("guest"); }));
+    body.querySelectorAll<HTMLButtonElement>(".pick-seg button").forEach(b => b.addEventListener("click", () => { guestMode = b.dataset.g; showPicker("guest"); }));
     body.querySelector("#pickForm").addEventListener("submit", ev => {
       ev.preventDefault();
-      const n = body.querySelector("#pickName").value.trim(), pw = body.querySelector("#pickPw").value;
-      if (reg && pw !== body.querySelector("#pickPw2").value) return pickError("Die Passwörter sind nicht gleich.");
+      const n = body.querySelector<HTMLInputElement>("#pickName").value.trim(), pw = body.querySelector<HTMLInputElement>("#pickPw").value;
+      if (reg && pw !== body.querySelector<HTMLInputElement>("#pickPw2").value) return pickError("Die Passwörter sind nicht gleich.");
       doAuth(reg ? "register" : "login", n, pw);
     });
     body.querySelector("#pickBack").addEventListener("click", () => showPicker("start"));
-    setTimeout(() => { const i = body.querySelector("#pickName"); if (i) i.focus(); }, 80);
+    setTimeout(() => { const i = body.querySelector<HTMLInputElement>("#pickName"); if (i) i.focus(); }, 80);
   }
   const c = body.querySelector("#pickClose"); if (c) c.addEventListener("click", hidePicker);
   picker.hidden = false;
@@ -217,7 +218,7 @@ function showPicker(mode, person) {
 function pickError(msg) { const e = document.getElementById("pickErr"); if (!e) return; e.textContent = msg; e.hidden = false; const f = document.getElementById("pickForm"); if (f) { f.classList.remove("shake"); void f.offsetWidth; f.classList.add("shake"); } }
 async function doAuth(kind, name, password) {
   if (!name || !password) return pickError(kind === "register" ? "Benutzername und Passwort eingeben." : "Bitte das Passwort eingeben.");
-  const btn = document.querySelector("#pickForm .cta"); if (btn) btn.disabled = true;
+  const btn = document.querySelector<HTMLButtonElement>("#pickForm .cta"); if (btn) btn.disabled = true;
   try {
     const r = await fetch("api/" + kind, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, password }) });
     const j = await r.json().catch(() => ({}));
@@ -252,8 +253,8 @@ function authLost() {
   showPicker("start");
   setTimeout(() => { authLostShown = false; }, 3000);
 }
-let toastT = 0;
-function toast(msg, bad) {
+let toastT: ReturnType<typeof setTimeout> | undefined;
+function toast(msg: string, bad?: boolean) {
   const t = document.getElementById("toast");
   t.textContent = msg; t.classList.toggle("bad", !!bad); t.hidden = false;
   requestAnimationFrame(() => t.classList.add("show"));
@@ -300,7 +301,7 @@ function refreshProgress() {
 }
 
 const main = document.getElementById("main");
-const views = {};
+const views: Record<string, View> = {};
 
 function viewStart() {
   const v = el("div", "view"); v.id = "v-start";
@@ -373,13 +374,13 @@ function drawChart() {
   renderPeople();
 }
 
-function personRow(p) {
+function personRow(p: string): PersonRow {
   const st = p === who ? S : partner[p];
   try {
     const a = allStats(st || blank());
-    return { name: p, pct: a.pct, got: a.got, exOk: a.exOk, exTot: a.exTot, ts: st ? Number(st.ts) || 0 : 0, days: DAYS.map(d => dayStats(d, st || blank()).pct) };
+    return { name: p, pct: a.pct, got: a.got, exOk: a.exOk, exTot: a.exTot, ts: st ? Number(st.ts) || 0 : 0, days: DAYS.map(d => dayStats(d, st || blank()).pct), rank: 0 };
   } catch (e) {
-    return { name: p, pct: 0, got: 0, exOk: 0, exTot: 0, ts: 0, days: DAYS.map(() => 0) };
+    return { name: p, pct: 0, got: 0, exOk: 0, exTot: 0, ts: 0, days: DAYS.map(() => 0), rank: 0 };
   }
 }
 function renderPeople() {
@@ -402,7 +403,7 @@ function renderPeople() {
     (collapsible ? '<button type="button" class="btn ghost pp-more" aria-expanded="' + peopleOpen + '">' + (peopleOpen ? "Weniger anzeigen" : "Alle " + rows.length + " anzeigen") + '</button>' : "");
   body.querySelector(".pp-list").scrollTop = top;
   const more = body.querySelector(".pp-more");
-  if (more) more.addEventListener("click", () => { peopleOpen = !peopleOpen; renderPeople(); const b = document.querySelector("#ppBody .pp-more"); if (b) b.focus(); });
+  if (more) more.addEventListener("click", () => { peopleOpen = !peopleOpen; renderPeople(); const b = document.querySelector<HTMLButtonElement>("#ppBody .pp-more"); if (b) b.focus(); });
   document.getElementById("ppCnt").textContent = rows.length + (rows.length === 1 ? " Konto" : " Konten") + " · jeder Balken ist ein Lerntag";
 }
 
@@ -421,7 +422,7 @@ function viewDay(d) {
   d.blocks.forEach((b, i) => {
     const k = d.n + "." + i, row = el("label", "blk" + (S.b[k] ? " on" : "")); row.dataset.pk = "b:" + k;
     row.innerHTML = '<input type="checkbox" class="ck" id="b' + d.n + "_" + i + '"' + (S.b[k] ? " checked" : "") + ' aria-label="Block erledigt"><span class="time">' + b[0] + ' min</span><span class="body"><span class="tag t-' + b[1] + '">' + TAGNAME[b[1]] + '</span>' + b[2] + '</span>';
-    row.querySelector("input").addEventListener("change", e => { S.b[k] = e.target.checked; row.classList.toggle("on", e.target.checked); save(); });
+    row.querySelector("input").addEventListener("change", e => { S.b[k] = (e.target as HTMLInputElement).checked; row.classList.toggle("on", (e.target as HTMLInputElement).checked); save(); });
     bl.appendChild(row);
   });
   sb.appendChild(bl); v.appendChild(sb);
@@ -466,7 +467,7 @@ function viewDay(d) {
   const sc = el("section", "card"); sc.innerHTML = '<h2>Du kannst … <span class="cnt">nur abhaken, wenn es ohne Hilfe klappt</span></h2>';
   const cl = el("div", "checks");
   d.checks.forEach((c, i) => { const k = d.n + "." + i, lb = el("label", S.c[k] ? "on" : ""); lb.dataset.pk = "c:" + k; lb.innerHTML = '<input type="checkbox" class="ck" id="c' + d.n + "_" + i + '"' + (S.c[k] ? " checked" : "") + '><span>' + c.replace(/_max/g, "<sub>max</sub>") + '</span>';
-    lb.querySelector("input").addEventListener("change", e => { S.c[k] = e.target.checked; lb.classList.toggle("on", e.target.checked); save(); }); cl.appendChild(lb); });
+    lb.querySelector("input").addEventListener("change", e => { S.c[k] = (e.target as HTMLInputElement).checked; lb.classList.toggle("on", (e.target as HTMLInputElement).checked); save(); }); cl.appendChild(lb); });
   sc.appendChild(cl); v.appendChild(sc);
 
   v.appendChild(viewReview(d));
@@ -500,13 +501,13 @@ function viewLessons(d) {
   return sec;
 }
 function openLesson(d, i) {
-  const det = document.getElementById("les" + d.n + "_" + i); if (!det) return;
+  const det = document.getElementById("les" + d.n + "_" + i) as HTMLDetailsElement | null; if (!det) return;
   det.open = true;
   det.scrollIntoView({ block: "start", behavior: reduceMotion() ? "auto" : "smooth" });
   det.classList.remove("flash"); void det.offsetWidth; det.classList.add("flash");
   setTimeout(() => det.classList.remove("flash"), 2600);
 }
-function reviewDone(d, st) { const r = REVIEW[d.n]; st = st || S; return !!r && !!st.r && r.q.every((_, i) => st.r[d.n + "." + i]); }
+function reviewDone(d, st?: Progress) { const r = REVIEW[d.n]; st = st || S; return !!r && !!st.r && r.q.every((_, i) => st.r[d.n + "." + i]); }
 function viewReview(d) {
   const r = REVIEW[d.n];
   const sec = el("section", "card rev"); sec.id = "rev" + d.n;
@@ -538,7 +539,7 @@ function viewReview(d) {
       } else {
         const o = el("div", "opts");
         q.o.map((_, j) => j).sort((x, y) => seed(k + "|" + x) - seed(k + "|" + y)).forEach(j => {
-          const b = el("button", "opt", q.o[j]); b.type = "button"; b.dataset.j = j;
+          const b = el("button", "opt", q.o[j]); b.type = "button"; b.dataset.j = String(j);
           b.addEventListener("click", () => { if (j === q.a) { b.classList.add("right"); win(); } else { b.classList.add("wrong"); fb.hidden = false; fb.className = "fb bad"; fb.textContent = "Nicht ganz. Versuch es nochmal."; } });
           o.appendChild(b);
         });
@@ -550,7 +551,7 @@ function viewReview(d) {
     });
     update();
   };
-  sec.addEventListener("click", ev => { if (ev.target.closest("[data-rev-reset]")) { r.q.forEach((_, i) => { delete S.r[d.n + "." + i]; }); save(); render(); } });
+  sec.addEventListener("click", ev => { if ((ev.target as Element).closest("[data-rev-reset]")) { r.q.forEach((_, i) => { delete S.r[d.n + "." + i]; }); save(); render(); } });
   render();
   return sec;
 }
@@ -566,7 +567,7 @@ function exGroups(d) {
 }
 function exNo(d, i) { exGroups(d); return d.n + "." + d._no[i]; }
 function refreshExCounts() {
-  document.querySelectorAll("[data-gc]").forEach(node => {
+  document.querySelectorAll<HTMLElement>("[data-gc]").forEach(node => {
     const [n, gi] = node.dataset.gc.split("|"); const d = DAYS[+n - 1]; const g = exGroups(d)[+gi]; if (!g) return;
     const ok = g.items.filter(i => S.x[d.n + "." + i] === "ok").length;
     node.textContent = ok + "/" + g.items.length; node.classList.toggle("full", ok === g.items.length);
@@ -606,7 +607,7 @@ function exCard(d, e, i) {
     const o = el("div", "opts");
     const seed = str => { let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
     const order = e.o.map((_, j) => j).sort((x, y) => seed(k + "|" + x) - seed(k + "|" + y));
-    order.forEach(j => { const t = e.o[j]; const b = el("button", "opt", t); b.type = "button"; b.dataset.j = j; b.addEventListener("click", () => {
+    order.forEach(j => { const t = e.o[j]; const b = el("button", "opt", t); b.type = "button"; b.dataset.j = String(j); b.addEventListener("click", () => {
       fb.hidden = false;
       if (j === e.a) { b.classList.add("right"); fb.className = "fb good"; fb.textContent = "Richtig."; sol.hidden = false; mark(true); }
       else { b.classList.add("wrong"); fb.className = "fb bad"; fb.textContent = "Nicht ganz. Versuch es nochmal."; }
@@ -616,7 +617,7 @@ function exCard(d, e, i) {
     const r = el("div", "row");
     const done = el("label", "row"); done.style.gap = "8px"; done.style.cursor = "pointer";
     done.innerHTML = '<input type="checkbox" class="ck" id="x' + d.n + "_" + i + '"' + (S.x[k] === "ok" ? " checked" : "") + '><span>Hab ich ohne Hilfe geschafft</span>';
-    done.querySelector("input").addEventListener("change", ev => { if (ev.target.checked) mark(true); else { S.x[k] = "shown"; c.classList.remove("ok"); save(); } });
+    done.querySelector("input").addEventListener("change", ev => { if ((ev.target as HTMLInputElement).checked) mark(true); else { S.x[k] = "shown"; c.classList.remove("ok"); save(); } });
     r.appendChild(done); c.appendChild(r);
   }
   if (S.x[k] === "ok") { const b = el("span", "badge-ok", "✓ gelöst"); c.querySelector(".q").appendChild(b); b.style.marginLeft = "auto"; }
@@ -637,13 +638,13 @@ function viewExam() {
     const r = el("div", "row"); const b = el("button", "btn", "Lösung zeigen"); b.type = "button"; b.addEventListener("click", () => { sol.hidden = !sol.hidden; b.textContent = sol.hidden ? "Lösung zeigen" : "Lösung ausblenden"; });
     const ai = el("button", "btn ghost", "KI fragen"); ai.type = "button"; ai.addEventListener("click", () => openAI("Probeklausur Aufgabe " + t.n + " (" + t.title + "): " + t.q.replace(/<[^>]+>/g, " ") + " Erklär mir den Lösungsweg Schritt für Schritt."));
     r.appendChild(b); r.appendChild(ai); c.appendChild(r); c.appendChild(sol);
-    c.querySelector("input").addEventListener("input", ev => { const val = ev.target.value.trim(); if (val === "") delete S.p[t.n]; else S.p[t.n] = String(parseNum(val) || 0); save(); });
+    c.querySelector("input").addEventListener("input", ev => { const val = (ev.target as HTMLInputElement).value.trim(); if (val === "") delete S.p[t.n]; else S.p[t.n] = String(parseNum(val) || 0); save(); });
     v.appendChild(c);
   });
   v.appendChild(el("p", "", '<span style="color:var(--muted)">Mindestens 63 von 70 Punkten (90 %) = bereit für 15 Punkte.</span>'));
   let left = 5400, iv = null;
   const show = () => { const m = Math.floor(left / 60), s = left % 60; v.querySelector("#tmr").textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0"); };
-  v.querySelector("#tStart").addEventListener("click", ev => { if (iv) { clearInterval(iv); iv = null; ev.target.textContent = "Weiter"; } else { iv = setInterval(() => { left = Math.max(0, left - 1); show(); if (!left) { clearInterval(iv); iv = null; } }, 1000); ev.target.textContent = "Pause"; } });
+  v.querySelector("#tStart").addEventListener("click", ev => { if (iv) { clearInterval(iv); iv = null; (ev.target as HTMLElement).textContent = "Weiter"; } else { iv = setInterval(() => { left = Math.max(0, left - 1); show(); if (!left) { clearInterval(iv); iv = null; } }, 1000); (ev.target as HTMLElement).textContent = "Pause"; } });
   v.querySelector("#tReset").addEventListener("click", () => { clearInterval(iv); iv = null; left = 5400; show(); v.querySelector("#tStart").textContent = "Start"; });
   return v;
 }
@@ -657,19 +658,19 @@ function viewFormulas() {
   const an = el("div", "card"); an.innerHTML = '<h3>Analogie Federpendel ↔ Schwingkreis</h3><table class="ftable">' + ANALOG.map(r => "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td></tr>").join("") + "</table>"; g.appendChild(an);
   v.appendChild(g);
   v.appendChild(el("div", "note warn", "<b>Die 8 häufigsten Punktkiller</b><ul>" + KILLERS.map(k => "<li>" + k + "</li>").join("") + "</ul>"));
-  v.querySelector("#coverBtn").addEventListener("click", ev => { const on = document.body.classList.toggle("cover"); ev.target.textContent = on ? "Formeln zeigen" : "Formeln abdecken"; v.querySelectorAll(".peek").forEach(x => x.classList.remove("peek")); });
-  v.addEventListener("click", ev => { const td = ev.target.closest(".ftable td:last-child"); if (td && document.body.classList.contains("cover")) td.classList.toggle("peek"); });
+  v.querySelector("#coverBtn").addEventListener("click", ev => { const on = document.body.classList.toggle("cover"); (ev.target as HTMLElement).textContent = on ? "Formeln zeigen" : "Formeln abdecken"; v.querySelectorAll(".peek").forEach(x => x.classList.remove("peek")); });
+  v.addEventListener("click", ev => { const td = (ev.target as Element).closest(".ftable td:last-child"); if (td && document.body.classList.contains("cover")) td.classList.toggle("peek"); });
   return v;
 }
 
 function viewErrors() {
-  const v = el("div", "view"); v.id = "v-fehler";
+  const v: View = el("div", "view"); v.id = "v-fehler";
   v.innerHTML = '<div class="dayhead"><span class="eyebrow">Vor der Klausur liest du nur noch das hier und die Formeln</span><h1>Fehlerheft</h1><p class="lede">Jeder Fehler mit einem Satz, z. B. „Ich habe cm nicht in m umgerechnet“. Wird gespeichert.</p></div>' +
     '<form class="fe-add" id="feForm"><input id="feIn" type="text" placeholder="Was ist schiefgegangen?" autocomplete="off"><button class="cta" type="submit">Eintragen</button></form><ul class="fe-list" id="feList"></ul>';
   const list = v.querySelector("#feList");
   const render = () => { list.innerHTML = ""; if (!S.f.length) { list.appendChild(el("li", "", '<span class="d">–</span><span style="color:var(--muted)">Noch keine Einträge. Der erste kommt nach dem Selbsttest an Tag 1.</span><span></span>')); return; }
     S.f.slice().reverse().forEach((f, ri) => { const idx = S.f.length - 1 - ri; const li = el("li"); li.appendChild(el("span", "d", f.d)); const t = el("span"); t.textContent = f.t; li.appendChild(t); const b = el("button", "", "Löschen"); b.type = "button"; b.addEventListener("click", () => { S.f.splice(idx, 1); save(); render(); }); li.appendChild(b); list.appendChild(li); }); };
-  v.querySelector("#feForm").addEventListener("submit", ev => { ev.preventDefault(); const i = v.querySelector("#feIn"); const t = i.value.trim(); if (!t) return; const now = new Date(); S.f.push({ t, d: String(now.getDate()).padStart(2, "0") + "." + String(now.getMonth() + 1).padStart(2, "0") + "." }); i.value = ""; save(); render(); });
+  v.querySelector("#feForm").addEventListener("submit", ev => { ev.preventDefault(); const i = v.querySelector<HTMLInputElement>("#feIn"); const t = i.value.trim(); if (!t) return; const now = new Date(); S.f.push({ t, d: String(now.getDate()).padStart(2, "0") + "." + String(now.getMonth() + 1).padStart(2, "0") + "." }); i.value = ""; save(); render(); });
   v._render = render; render();
   const op = other();
   if (op) {
@@ -715,13 +716,13 @@ function initialView() {
 }
 function go(id) { if (NAV.some(n => n[0] === id)) route(id); }
 document.addEventListener("click", ev => {
-  const t = ev.target.closest("[data-go]");
+  const t = (ev.target as Element).closest<HTMLElement>("[data-go]");
   if (!t) return;
   ev.preventDefault();
   go(t.dataset.go);
 });
 document.addEventListener("keydown", ev => {
-  if ((ev.key === "Enter" || ev.key === " ") && ev.target.matches && ev.target.matches('[data-go][role="button"]')) { ev.preventDefault(); go(ev.target.dataset.go); }
+  if ((ev.key === "Enter" || ev.key === " ") && (ev.target as HTMLElement).matches?.('[data-go][role="button"]')) { ev.preventDefault(); go((ev.target as HTMLElement).dataset.go); }
 });
 function route(target) {
   let id = target || cur || "start";
@@ -745,8 +746,8 @@ function route(target) {
     views[id] = v; main.appendChild(v);
   }
   Object.entries(views).forEach(([k, v]) => v.hidden = k !== id);
-  document.querySelectorAll(".rail .nav, .strip button").forEach(a => { const on = a.dataset.id === id; a.classList.toggle("cur", on); if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
-  const strip = document.getElementById("strip"), sc = strip.querySelector("button.cur");
+  document.querySelectorAll<HTMLElement>(".rail .nav, .strip button").forEach(a => { const on = a.dataset.id === id; a.classList.toggle("cur", on); if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  const strip = document.getElementById("strip"), sc = strip.querySelector<HTMLElement>("button.cur");
   if (sc && strip.clientWidth) strip.scrollLeft = Math.max(0, sc.offsetLeft - strip.clientWidth / 2 + sc.offsetWidth / 2);
   if (changed) {
     try { window.scrollTo(0, 0); } catch (e) {}
@@ -763,7 +764,7 @@ function rebuildAll() { const keep = cur; Object.values(views).forEach(v => v.re
 
 let amp = 0, scopeRAF = 0;
 function startScope() {
-  const cv = document.getElementById("scope"); if (!cv) return;
+  const cv = document.getElementById("scope") as HTMLCanvasElement | null; if (!cv) return;
   cancelAnimationFrame(scopeRAF);
   const ctx = cv.getContext("2d"); const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let shown = 0.06;
@@ -800,7 +801,7 @@ async function serverSample(input, opts) {
   let r;
   try { r = await apiFetch("api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages }), signal: opts.signal }); }
   catch (e) { throw { code: e && e.name === "AbortError" ? "cancelled" : "upstream_error", message: String(e) }; }
-  if (!r.ok) { let j = {}; try { j = await r.json(); } catch (e) {} throw { code: j.code || (r.status === 429 ? "rate_limited" : "upstream_error"), message: j.error || "" }; }
+  if (!r.ok) { let j: { code?: string; error?: string } = {}; try { j = await r.json(); } catch (e) {} throw { code: j.code || (r.status === 429 ? "rate_limited" : "upstream_error"), message: j.error || "" }; }
   const reader = r.body.getReader(), dec = new TextDecoder(); let text = "";
   try {
     for (;;) { const { done, value } = await reader.read(); if (done) break; const delta = dec.decode(value, { stream: true }); text += delta; if (opts.onText) opts.onText({ text, delta }); }
@@ -808,7 +809,7 @@ async function serverSample(input, opts) {
   if (!text.trim()) throw { code: "empty_completion", message: "" };
   return { text, truncated: false };
 }
-const drawer = document.getElementById("drawer"), msgs = document.getElementById("msgs"), input = document.getElementById("aiInput");
+const drawer = document.getElementById("drawer"), msgs = document.getElementById("msgs"), input = document.getElementById("aiInput") as HTMLTextAreaElement;
 function mdToHtml(s) {
   const esc = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const lines = esc.split("\n"); let out = "", list = null;
@@ -832,7 +833,7 @@ function emptyState() {
   ["Erklär mir die DGL vom Federpendel, als wäre ich in der 9. Klasse.", "Warum steht in F = −D·s ein Minus?", "Frag mich die Formeln von Tag 4 ab, eine Frage nach der anderen.", "Gib mir eine neue Übungsaufgabe zum Fadenpendel mit Lösung zum Aufklappen."].forEach(t => { const b = el("button", "sug", t); b.type = "button"; b.addEventListener("click", () => send(t)); sg.appendChild(b); });
   msgs.appendChild(sg);
 }
-function openAI(prefill) {
+function openAI(prefill?: string) {
   drawer.classList.add("open"); drawer.setAttribute("aria-hidden", "false"); document.getElementById("fab").classList.add("away");
   syncPanels();
   if (!msgs.childElementCount) emptyState();
@@ -886,7 +887,7 @@ document.getElementById("fab").addEventListener("click", () => openAI());
 document.getElementById("aiClose").addEventListener("click", closeAI);
 document.getElementById("aiClear").addEventListener("click", () => { if (ctl) ctl.abort(); turns = []; msgs.innerHTML = ""; emptyState(); });
 document.getElementById("composer").addEventListener("submit", ev => { ev.preventDefault(); if (busy) { if (ctl) ctl.abort(); return; } const t = input.value; input.value = ""; input.style.height = ""; send(t); });
-input.addEventListener("keydown", ev => { if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); document.getElementById("composer").requestSubmit(); } });
+input.addEventListener("keydown", ev => { if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); (document.getElementById("composer") as HTMLFormElement).requestSubmit(); } });
 input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 140) + "px"; });
 document.addEventListener("keydown", ev => { if (ev.key === "Escape" && isOpen()) closeAI(); });
 
@@ -977,7 +978,7 @@ function calcFmt(v) {
   return String(+v.toPrecision(7)).replace(".", ",").replace("-", "−");
 }
 
-const U = {
+const U: Record<string, Unit[]> = {
   t: [["s", 1], ["ms", 1e-3]],
   m: [["kg", 1], ["g", 1e-3]],
   len: [["m", 1], ["cm", 1e-2], ["mm", 1e-3]],
@@ -996,7 +997,7 @@ const U = {
   rho: [["kg/m³", 1]]
 };
 const PI2 = 4 * Math.PI * Math.PI;
-const SOLVERS = [
+const SOLVERS: Solver[] = [
   { id: "konv", name: "f, T und ω umrechnen", f: "f = 1/T,  ω = 2πf", convert: true,
     vars: [["T", "Periodendauer", U.t], ["f", "Frequenz", U.f], ["w", "Kreisfrequenz ω", U.w]] },
   { id: "feder", name: "Federpendel", f: "T = 2π√(m/D)",
@@ -1073,7 +1074,7 @@ document.getElementById("calcClose").addEventListener("click", closeCalc);
 document.addEventListener("keydown", ev => { if (ev.key === "Escape" && calcOpen()) closeCalc(); });
 
 function renderCalc() {
-  document.querySelectorAll("#calcSeg button").forEach(b => { const on = b.dataset.mode === calcPrefs.mode; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+  document.querySelectorAll<HTMLButtonElement>("#calcSeg button").forEach(b => { const on = b.dataset.mode === calcPrefs.mode; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
   document.getElementById("cRechner").hidden = calcPrefs.mode !== "rechner";
   document.getElementById("cFormeln").hidden = calcPrefs.mode !== "formeln";
   document.getElementById("cAngle").textContent = calcPrefs.deg ? "DEG" : "RAD";
@@ -1081,10 +1082,10 @@ function renderCalc() {
   renderHist(); preview();
   if (calcPrefs.mode === "formeln") renderSolver();
 }
-document.getElementById("calcSeg").addEventListener("click", ev => { const b = ev.target.closest("button[data-mode]"); if (!b) return; calcPrefs.mode = b.dataset.mode; saveCalc(); renderCalc(); });
+document.getElementById("calcSeg").addEventListener("click", ev => { const b = (ev.target as Element).closest<HTMLButtonElement>("button[data-mode]"); if (!b) return; calcPrefs.mode = b.dataset.mode; saveCalc(); renderCalc(); });
 document.getElementById("cAngle").addEventListener("click", () => { calcPrefs.deg = !calcPrefs.deg; saveCalc(); renderCalc(); toast(calcPrefs.deg ? "Gradmaß (DEG): sin(90) = 1" : "Bogenmaß (RAD): für sin(ωt) immer RAD"); });
 
-const cIn = document.getElementById("cIn"), cPrev = document.getElementById("cPrev");
+const cIn = document.getElementById("cIn") as HTMLInputElement, cPrev = document.getElementById("cPrev");
 if (matchMedia("(pointer: coarse)").matches) cIn.setAttribute("inputmode", "none");
 function preview() {
   const s = cIn.value.trim();
@@ -1125,7 +1126,7 @@ function commitCalc() {
 cIn.addEventListener("input", preview);
 cIn.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); commitCalc(); } });
 document.getElementById("cKeys").addEventListener("click", ev => {
-  const b = ev.target.closest("button"); if (!b) return;
+  const b = (ev.target as Element).closest("button"); if (!b) return;
   const k = b.dataset.k;
   if (k === "=") commitCalc();
   else if (k === "C") { cIn.value = ""; preview(); }
@@ -1135,7 +1136,7 @@ document.getElementById("cKeys").addEventListener("click", ev => {
 });
 
 function renderSolver() {
-  const sel = document.getElementById("sSel");
+  const sel = document.getElementById("sSel") as HTMLSelectElement;
   if (!sel.options.length) SOLVERS.forEach(s => { const o = document.createElement("option"); o.value = s.id; o.textContent = s.name; sel.appendChild(o); });
   const sv = SOLVERS.find(s => s.id === calcPrefs.solver) || SOLVERS[1];
   sel.value = sv.id;
@@ -1150,17 +1151,17 @@ function renderSolver() {
   });
   document.getElementById("sOut").hidden = true;
 }
-document.getElementById("sSel").addEventListener("change", ev => { calcPrefs.solver = ev.target.value; saveCalc(); renderSolver(); });
+document.getElementById("sSel").addEventListener("change", ev => { calcPrefs.solver = (ev.target as HTMLSelectElement).value; saveCalc(); renderSolver(); });
 document.getElementById("sReset").addEventListener("click", renderSolver);
 document.getElementById("sVars").addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); runSolver(); } });
 document.getElementById("sGo").addEventListener("click", runSolver);
 function runSolver() {
   const sv = SOLVERS.find(s => s.id === calcPrefs.solver) || SOLVERS[1];
   const out = document.getElementById("sOut"), box = document.getElementById("sVars");
-  const vals = {}, fac = {}, unit = {}, empty = [];
+  const vals: Record<string, number> = {}, fac: Record<string, number> = {}, unit: Record<string, string> = {}, empty: string[] = [];
   let bad = null;
   sv.vars.forEach(([k, label, units]) => {
-    const inp = box.querySelector('input[data-k="' + k + '"]'), us = box.querySelector('select[data-u="' + k + '"]');
+    const inp = box.querySelector<HTMLInputElement>('input[data-k="' + k + '"]'), us = box.querySelector<HTMLSelectElement>('select[data-u="' + k + '"]');
     const ui = us ? +us.value : 0; fac[k] = units[ui][1]; unit[k] = units[ui][0];
     const raw = inp.value.trim();
     if (!raw) { empty.push(k); return; }
@@ -1176,7 +1177,7 @@ function runSolver() {
     const k = ["T", "f", "w"].find(x => !empty.includes(x));
     const f = k === "T" ? 1 / vals.T : k === "f" ? vals.f : vals.w / (2 * Math.PI);
     const r = { T: 1 / f, f, w: 2 * Math.PI * f };
-    ["T", "f", "w"].forEach(x => { if (x !== k) box.querySelector('input[data-k="' + x + '"]').value = calcFmt(r[x] / fac[x]); });
+    ["T", "f", "w"].forEach(x => { if (x !== k) box.querySelector<HTMLInputElement>('input[data-k="' + x + '"]').value = calcFmt(r[x] / fac[x]); });
     calcAns = r.w;
     return show("<b>T = " + calcFmt(r.T) + " s · f = " + calcFmt(r.f) + " Hz · ω = " + calcFmt(r.w) + " 1/s</b><span>f = 1/T, ω = 2π·f = 2π/T</span>", "ok");
   }
@@ -1185,7 +1186,7 @@ function runSolver() {
   if (sv.only && sv.vars.some(([k]) => k !== target && !(k in vals))) return show("Trag s<sub>max</sub>, ω und t ein.", "err");
   const res = sv.solve[target](vals);
   if (!isFinite(res)) return show("Mit diesen Werten geht die Rechnung nicht auf (z. B. Division durch 0 oder Wurzel aus negativer Zahl).", "err");
-  const tInp = box.querySelector('input[data-k="' + target + '"]');
+  const tInp = box.querySelector<HTMLInputElement>('input[data-k="' + target + '"]');
   tInp.value = calcFmt(res / fac[target]);
   calcAns = res;
   const tLabel = sv.vars.find(v => v[0] === target)[1];
@@ -1285,7 +1286,7 @@ function relTime(ts) {
 }
 const NICON = { block: "◷", check: "✓", exercise: "✎", day: "★", milestone: "▲", exam: "◎", examdone: "◎", fehler: "!" };
 function ncOpen() { return ncenter.classList.contains("open"); }
-function markRead(ids) { apiFetch("api/notifs/read", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(ids ? { who, ids } : { who }) }).catch(() => {}); }
+function markRead(ids?: string[]) { apiFetch("api/notifs/read", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(ids ? { who, ids } : { who }) }).catch(() => {}); }
 function openNc() {
   closeMenu();
   ncenter.classList.add("open"); ncenter.setAttribute("aria-hidden", "false"); bellBtn.setAttribute("aria-expanded", "true");
@@ -1319,7 +1320,7 @@ document.getElementById("ncClear").addEventListener("click", () => {
   notifs = []; unread = 0; renderBell(); renderNc();
   apiFetch("api/notifs/clear", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ who }) }).catch(() => {});
 });
-document.addEventListener("click", ev => { if (ncOpen() && !ev.target.closest(".bell")) closeNc(); });
+document.addEventListener("click", ev => { if (ncOpen() && !(ev.target as Element).closest(".bell")) closeNc(); });
 document.addEventListener("keydown", ev => { if (ev.key === "Escape" && ncOpen()) closeNc(); });
 
 function openTarget(n) {
@@ -1334,7 +1335,7 @@ function openTarget(n) {
   }));
 }
 
-let ntoastT = 0;
+let ntoastT: ReturnType<typeof setTimeout> | undefined;
 function liveToast(n) {
   const t = document.getElementById("ntoast");
   t.innerHTML = avatar(n.from) + '<span class="nt-x"></span><span class="nt-go">Ansehen</span>';
@@ -1365,10 +1366,10 @@ function connectStream() {
 }
 function refreshPartnerMarks() {
   const op = other(), ps = op && partner[op];
-  document.querySelectorAll("[data-pk]").forEach(node => {
+  document.querySelectorAll<HTMLElement>("[data-pk]").forEach(node => {
     const [t, k] = node.dataset.pk.split(":");
     const done = !!ps && (t === "b" ? !!ps.b[k] : t === "c" ? !!ps.c[k] : ps.x[k] === "ok");
-    let m = node.querySelector(":scope > .pm");
+    let m = node.querySelector<HTMLElement>(":scope > .pm");
     if (done && !m) { m = el("span", "pm av av-" + op.toLowerCase(), op[0]); m.title = op + " hat das schon erledigt"; node.appendChild(m); }
     else if (!done && m) m.remove();
   });

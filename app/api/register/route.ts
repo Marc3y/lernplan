@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export const POST = handle(async req => {
   if (limited("auth:" + clientIp(req), 12, 60000)) return json(429, { error: "Zu viele Versuche. Warte eine Minute." });
-  const body = await readBody(req);
+  const body = await readBody<{ name?: unknown; password?: unknown }>(req);
   const pw = typeof body.password === "string" ? body.password : "";
   const name = String(body.name || "").trim();
   if (!NAME_RE.test(name)) return json(400, { error: "Benutzername: 3–20 Zeichen, nur Buchstaben, Zahlen, Punkt, Minus oder Unterstrich." });

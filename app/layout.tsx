@@ -1,9 +1,12 @@
-export const metadata = {
+import type { Metadata, Viewport } from "next";
+import type { ReactNode } from "react";
+
+export const metadata: Metadata = {
   title: "Schwingungen 15 Punkte",
   other: { "claude:viewport-fit-sides": "cover" },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -13,7 +16,7 @@ export const viewport = {
   ],
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="de">
       <head>

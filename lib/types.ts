@@ -1,3 +1,13 @@
+export interface SubjectProgress {
+  b: Record<string, boolean>;
+  c: Record<string, boolean>;
+  x: Record<string, string>;
+  p: Record<string, number | string>;
+  r: Record<string, boolean>;
+  f: { d: string; t: string }[];
+  mode?: string;
+}
+
 export interface Progress {
   b: Record<string, boolean>;
   c: Record<string, boolean>;
@@ -6,6 +16,7 @@ export interface Progress {
   r: Record<string, boolean>;
   f: { d: string; t: string }[];
   ts: number;
+  inf?: SubjectProgress;
 }
 
 export type View = HTMLElement & { _render?: () => void; _renderPartner?: () => void };
@@ -59,6 +70,7 @@ export interface Exercise {
   t?: string;
   g?: string;
   q?: string;
+  k?: boolean;
   a?: number;
   u?: string;
   o?: string[];
@@ -81,6 +93,10 @@ export interface Day {
   groups: string[];
   ex: Exercise[];
   analog?: boolean;
+  core?: { b?: number[]; c?: number[] };
+  _groups?: { name: string; items: number[] }[];
+  _no?: Record<number, number>;
+  _mode?: string;
 }
 
 export interface ExamTask {
@@ -100,6 +116,7 @@ export interface Lesson {
   t: string;
   g?: string;
   h: string;
+  k?: boolean;
 }
 
 export type FormulaGroup = [title: string, rows: [label: string, formula: string][]];

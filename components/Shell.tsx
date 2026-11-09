@@ -3,7 +3,8 @@ export default function Shell() {
     <>
       <header className="top">
         <div className="top-in">
-          <button className="brand" type="button" data-go="start"><svg viewBox="0 0 26 16" aria-hidden="true"><path d="M1 8 C 5 -2, 8 -2, 13 8 S 21 18, 25 8" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg>Schwingungen · 15</button>
+          <button className="brand" type="button" data-go="start"><svg viewBox="0 0 26 16" aria-hidden="true"><path d="M1 8 C 5 -2, 8 -2, 13 8 S 21 18, 25 8" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg><span id="brandTxt">Schwingungen · 15</span></button>
+          <div className="seg subj" id="subjSeg" role="group" aria-label="Fach"><button type="button" data-subj="phys">Physik</button><button type="button" data-subj="inf">Informatik</button></div>
           <span className="sp"></span>
           <span className="chip" id="topChip">Klausur in <b id="cdTop">–</b></span>
           <div className="bell" id="bellWrap" hidden>

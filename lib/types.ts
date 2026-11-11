@@ -17,6 +17,7 @@ export interface Progress {
   f: { d: string; t: string }[];
   ts: number;
   inf?: SubjectProgress;
+  mat?: SubjectProgress;
 }
 
 export type View = HTMLElement & { _render?: () => void; _renderPartner?: () => void };
@@ -120,3 +121,33 @@ export interface Lesson {
 }
 
 export type FormulaGroup = [title: string, rows: [label: string, formula: string][]];
+
+export interface CourseMeta {
+  brand: string;
+  label: string;
+  word: string;
+  unitsLabel: string;
+  eyebrow: string;
+  topic: string;
+  intro: string;
+  goal15: string;
+  goalGut: string;
+  how: string;
+  navExam: string;
+  examMins: number;
+  examEyebrow: string;
+  examLede: string;
+  beforeExam: string;
+  formulasEyebrow: string;
+  formulasTitle: string;
+  formulasLede: string;
+  formulasNav: string;
+  symbols: [string, string][];
+  formulas: FormulaGroup[];
+  killers: string[];
+  rulesHtml: string;
+  ai: string;
+  tutor: string;
+  sugs: string[];
+  errExample: string;
+}

@@ -5,7 +5,8 @@ import { LESSONS as PHYS_LESSONS } from "./data/lessons";
 import { TIPS as PHYS_TIPS, REVIEW_TIPS as PHYS_REVIEW_TIPS, EXAM_TIPS as PHYS_EXAM_TIPS } from "./data/tips";
 import { V } from "./data/videos";
 import { INF_DAYS, INF_LESSONS, INF_REVIEW, INF_TIPS, INF_REVIEW_TIPS, INF_EXAM, INF_EXAM_TIPS, INF_FORMULAS, INF_SYMBOLS, INF_KILLERS } from "./data/informatik";
-import type { Progress, SubjectProgress, View, Unit, Solver, PersonRow, Day, ExamTask, Review, Lesson } from "./types";
+import { MAT_DAYS, MAT_LESSONS, MAT_REVIEW, MAT_TIPS, MAT_REVIEW_TIPS, MAT_EXAM, MAT_EXAM_TIPS, MAT_META } from "./data/mathe";
+import type { Progress, SubjectProgress, View, Unit, Solver, PersonRow, Day, ExamTask, Review, Lesson, CourseMeta } from "./types";
 
 const ON_CLAUDE = !!(window.claude && window.claude.use);
 const SERVER = !ON_CLAUDE && /^https?:$/.test(location.protocol);
@@ -14,20 +15,24 @@ const WHO_KEY = "schwingungen15.who";
 const OLD_KEY = "schwingungen15.v1";
 const keyFor = p => "schwingungen15.v2." + p;
 const blankSub = (): SubjectProgress => ({ b: {}, c: {}, x: {}, p: {}, r: {}, f: [] });
-const blank = (): Progress => ({ b: {}, c: {}, x: {}, p: {}, r: {}, f: [], ts: 0, inf: blankSub() });
+const blank = (): Progress => ({ b: {}, c: {}, x: {}, p: {}, r: {}, f: [], ts: 0, inf: blankSub(), mat: blankSub() });
 function fill(st): Progress {
   const out = Object.assign(blank(), st || {});
   out.inf = Object.assign(blankSub(), out.inf || {});
+  out.mat = Object.assign(blankSub(), out.mat || {});
   return out;
 }
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 
-type Subject = "phys" | "inf";
+type Subject = "phys" | "inf" | "mat";
+type Course = "inf" | "mat";
 const COURSES = {
   phys: { DAYS: PHYS_DAYS, EXAM: PHYS_EXAM, REVIEW: PHYS_REVIEW, LESSONS: PHYS_LESSONS, TIPS: PHYS_TIPS, REVIEW_TIPS: PHYS_REVIEW_TIPS, EXAM_TIPS: PHYS_EXAM_TIPS },
   inf: { DAYS: INF_DAYS, EXAM: INF_EXAM, REVIEW: INF_REVIEW, LESSONS: INF_LESSONS, TIPS: INF_TIPS, REVIEW_TIPS: INF_REVIEW_TIPS, EXAM_TIPS: INF_EXAM_TIPS },
+  mat: { DAYS: MAT_DAYS, EXAM: MAT_EXAM, REVIEW: MAT_REVIEW, LESSONS: MAT_LESSONS, TIPS: MAT_TIPS, REVIEW_TIPS: MAT_REVIEW_TIPS, EXAM_TIPS: MAT_EXAM_TIPS },
 };
+const COURSE_KEYS: Course[] = ["inf", "mat"];
 const SUBJ_KEY = "schwingungen15.subj";
 let SUBJ: Subject = "phys";
 let DAYS: Day[], EXAM: ExamTask[], REVIEW: Record<number, Review>, LESSONS: Record<number, Lesson[]>, TIPS: Record<string, string>, REVIEW_TIPS: Record<string, string>, EXAM_TIPS: Record<string, string>;
@@ -35,7 +40,8 @@ function useCourse(s: Subject) {
   SUBJ = s;
   ({ DAYS, EXAM, REVIEW, LESSONS, TIPS, REVIEW_TIPS, EXAM_TIPS } = COURSES[s]);
 }
-useCourse(lsGet(SUBJ_KEY) === "inf" ? "inf" : "phys");
+const savedSubj = lsGet(SUBJ_KEY);
+useCourse(savedSubj === "inf" || savedSubj === "mat" ? savedSubj : "phys");
 function loadLocal(p) {
   let raw = lsGet(keyFor(p));
   if (!raw && p === "Marcus") raw = lsGet(OLD_KEY);
@@ -49,9 +55,11 @@ let who = SERVER ? (auth ? auth.name : null) : lsGet(WHO_KEY);
 if (!SERVER && !PEOPLE.includes(who)) who = null;
 let S = who ? loadLocal(who) : blank();
 const other = () => PEOPLE.includes(who) ? PEOPLE.find(p => p !== who) : null;
-const sub = (st: Progress): SubjectProgress => SUBJ === "inf" ? st.inf : st;
+const sub = (st: Progress): SubjectProgress => SUBJ === "phys" ? st : st[SUBJ];
 const mine = () => sub(S);
-const modeOf = (st?: SubjectProgress) => SUBJ === "inf" && (st || mine()).mode === "gut" ? "gut" : "15";
+const modeOf = (st?: SubjectProgress) => SUBJ !== "phys" && (st || mine()).mode === "gut" ? "gut" : "15";
+const MT = (): CourseMeta => META[SUBJ as Course];
+const W = () => SUBJ === "phys" ? "Tag" : MT().word;
 const shows = (d: Day, kind: "b" | "c", i: number, st?: SubjectProgress) => modeOf(st) !== "gut" || !d.core || (d.core[kind] || []).includes(i);
 const exShown = (e, st?: SubjectProgress) => !e.off && (modeOf(st) !== "gut" || !!e.k);
 const lessonShown = (l: Lesson) => modeOf() !== "gut" || !!l.k;
@@ -293,16 +301,16 @@ window.addEventListener("error", ev => toast("Fehler: " + (ev.message || "unbeka
 window.addEventListener("unhandledrejection", ev => { const r = ev.reason; if (r && (r.code === "cancelled" || r.name === "AbortError")) return; });
 
 function makeNav() {
-  if (SUBJ === "inf") return [["start", "Übersicht", "Ziel und Fortschritt"]].concat(DAYS.map(d => ["tag" + d.n, "Tag " + d.n, d.short])).concat([["klausur", "Probeklausur", "60 min, " + examMax() + " Punkte"], ["formeln", "Formeln", "Formeln und Begriffe"], ["fehler", "Fehlerheft", "Deine Fehler, ein Satz je Fehler"], ["regeln", "Spielregeln", "So holt ihr die Punkte"]]);
+  if (SUBJ !== "phys") return [["start", "Übersicht", "Ziel und Fortschritt"]].concat(DAYS.map(d => ["tag" + d.n, W() + " " + d.n, d.short])).concat([["klausur", "Probeklausur", MT().navExam], ["formeln", "Formeln", MT().formulasNav], ["fehler", "Fehlerheft", "Deine Fehler, ein Satz je Fehler"], ["regeln", "Spielregeln", "So holt ihr die Punkte"]]);
   return [["start", "Übersicht", "Countdown und Fortschritt"]].concat(DAYS.map(d => ["tag" + d.n, "Tag " + d.n, d.wd + " · " + d.short])).concat([["klausur", "Probeklausur", "90 min, 70 Punkte"], ["formeln", "Formeln", "Alles zum Auswendiglernen"], ["fehler", "Fehlerheft", "Deine Fehler, ein Satz je Fehler"], ["regeln", "Spielregeln", "So lernt ihr zu zweit"]]);
 }
-let NAV = makeNav();
+let NAV: string[][] = [];
 const ICONS = { start: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z", klausur: "M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9 1h6", formeln: "M15 4c-2.5 0-3 1.5-3.4 4L10 17c-.4 2.5-1 3.5-3 3.5M7.5 9.5h8M14 13l5 6M19 13l-5 6", fehler: "M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11M9 8h6", regeln: "M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" };
 function buildNav() {
   const rail = document.getElementById("rail"), strip = document.getElementById("strip");
   rail.innerHTML = ""; strip.innerHTML = "";
   const ti = todayIdx();
-  const heads = SUBJ === "inf" ? { 0: "Plan", 1: "Lerntage", [DAYS.length + 1]: "Vor dem Abi", [DAYS.length + 2]: "Werkzeuge" } : { 0: "Plan", 1: "Woche 1", 5: "Woche 2", 10: "Vor der Klausur", 11: "Werkzeuge" };
+  const heads = SUBJ !== "phys" ? { 0: "Plan", 1: MT().unitsLabel, [DAYS.length + 1]: MT().beforeExam, [DAYS.length + 2]: "Werkzeuge" } : { 0: "Plan", 1: "Woche 1", 5: "Woche 2", 10: "Vor der Klausur", 11: "Werkzeuge" };
   NAV.forEach(([id, label, sub], i) => {
     if (heads[i]) rail.appendChild(el("div", "grp", heads[i]));
     const a = el("button", "nav"); a.type = "button"; a.dataset.go = id; a.dataset.id = id;
@@ -334,7 +342,7 @@ const main = document.getElementById("main");
 const views: Record<string, View> = {};
 
 function viewStart() {
-  if (SUBJ === "inf") return viewStartInf();
+  if (SUBJ !== "phys") return viewStartCourse();
   const v = el("div", "view"); v.id = "v-start";
   const ti = todayIdx(), dl = daysLeft();
   let todayTxt;
@@ -426,7 +434,7 @@ function renderPeople() {
   const shown = !collapsible || peopleOpen ? rows : rows.filter((r, i) => i < PEOPLE_TOP || r.name === who);
   const row = r => {
     const meta = !r.got ? "Noch nicht gestartet" : r.exOk + " von " + r.exTot + " Übungen" + (r.ts ? " · " + (r.name === who ? "zuletzt " : "") + relTime(r.ts) : "");
-    const strip = r.days.map((pc, i) => '<span title="Tag ' + (i + 1) + ': ' + pc + ' %">' + (pc ? '<i class="' + (pc === 100 ? "full" : "") + '" style="width:' + pc + '%"></i>' : "") + '</span>').join("");
+    const strip = r.days.map((pc, i) => '<span title="' + W() + ' ' + (i + 1) + ': ' + pc + ' %">' + (pc ? '<i class="' + (pc === 100 ? "full" : "") + '" style="width:' + pc + '%"></i>' : "") + '</span>').join("");
     return '<div class="pp-r' + (r.name === who ? " me" : "") + (r.got ? "" : " idle") + '"><span class="pp-n">' + (r.got ? r.rank : "–") + '</span>' + avatar(r.name) + '<div class="pp-m"><div class="pp-t"><b>' + r.name + (r.name === who ? ' <small>(du)</small>' : "") + '</b><span>' + r.pct + ' %</span></div><div class="pp-days" role="img" aria-label="' + r.pct + ' Prozent erledigt">' + strip + '</div><small>' + meta + '</small></div></div>';
   };
   const scroll = body.querySelector(".pp-list");
@@ -443,7 +451,7 @@ function viewDay(d) {
   const v = el("div", "view"); v.id = "v-tag" + d.n;
   const head = el("div", "dayhead");
   const mins = d.blocks.reduce((a, b, i) => a + (shows(d, "b", i) ? +b[0] : 0), 0);
-  head.innerHTML = '<div class="meta"><span class="eyebrow">Tag ' + d.n + ' von ' + DAYS.length + (SUBJ === "inf" ? ' · ' + mins + ' Minuten' + (modeOf() === "gut" ? ' · Gute Note: nur das Wichtigste' : ' · 15 Punkte: alles') : ' · ' + d.wd + ' · 3 Stunden') + '</span></div><h1>' + d.title + '</h1><p class="lede"><b>Ziel:</b> ' + d.goal + '</p><div class="prog" style="margin-top:6px"><i id="dp' + d.n + '"></i></div><span class="mono" style="font-size:13px;color:var(--muted)" id="dpt' + d.n + '"></span>';
+  head.innerHTML = '<div class="meta"><span class="eyebrow">' + W() + ' ' + d.n + ' von ' + DAYS.length + (SUBJ !== "phys" ? ' · ' + mins + ' Minuten' + (modeOf() === "gut" ? ' · Gute Note: nur das Wichtigste' : ' · 15 Punkte: alles') : ' · ' + d.wd + ' · 3 Stunden') + '</span></div><h1>' + d.title + '</h1><p class="lede"><b>Ziel:</b> ' + d.goal + '</p><div class="prog" style="margin-top:6px"><i id="dp' + d.n + '"></i></div><span class="mono" style="font-size:13px;color:var(--muted)" id="dpt' + d.n + '"></span>';
   const jump = el("button", "btn rev-jump", "Zur Wiederholung"); jump.type = "button"; jump.id = "revJump" + d.n;
   jump.addEventListener("click", () => { const t = document.getElementById("rev" + d.n); if (t) t.scrollIntoView({ block: "start", behavior: reduceMotion() ? "auto" : "smooth" }); });
   head.appendChild(jump);
@@ -508,7 +516,7 @@ function viewDay(d) {
   if (reviewDone(d)) { jump.textContent = "Wiederholung geschafft ✓"; jump.classList.add("ok"); }
 
   const pg = el("div", "pager");
-  pg.innerHTML = (d.n > 1 ? '<button type="button" class="btn" data-go="tag' + (d.n - 1) + '">← Tag ' + (d.n - 1) + '</button>' : '<button type="button" class="btn" data-go="start">← Übersicht</button>') + (d.n < DAYS.length ? '<button type="button" class="btn" data-go="tag' + (d.n + 1) + '">Tag ' + (d.n + 1) + ' →</button>' : '<button type="button" class="btn" data-go="klausur">Zur Probeklausur →</button>');
+  pg.innerHTML = (d.n > 1 ? '<button type="button" class="btn" data-go="tag' + (d.n - 1) + '">← ' + W() + ' ' + (d.n - 1) + '</button>' : '<button type="button" class="btn" data-go="start">← Übersicht</button>') + (d.n < DAYS.length ? '<button type="button" class="btn" data-go="tag' + (d.n + 1) + '">' + W() + ' ' + (d.n + 1) + ' →</button>' : '<button type="button" class="btn" data-go="klausur">Zur Probeklausur →</button>');
   v.appendChild(pg);
   return v;
 }
@@ -552,7 +560,7 @@ function viewReview(d) {
   const update = () => {
     const ok = r.q.filter((_, i) => mine().r[d.n + "." + i]).length, done = ok === r.q.length;
     sec.classList.toggle("done", done);
-    const next = d.n < DAYS.length ? '<button type="button" class="cta" data-go="tag' + (d.n + 1) + '">Weiter mit Tag ' + (d.n + 1) + '</button>' : '<button type="button" class="cta" data-go="klausur">Zur Probeklausur</button>';
+    const next = d.n < DAYS.length ? '<button type="button" class="cta" data-go="tag' + (d.n + 1) + '">Weiter mit ' + W() + ' ' + (d.n + 1) + '</button>' : '<button type="button" class="cta" data-go="klausur">Zur Probeklausur</button>';
     status.innerHTML = done ? '<span><b>Alles sitzt.</b> Du kannst weitermachen.</span><div class="row">' + next + '<button type="button" class="btn ghost" data-rev-reset>Nochmal</button></div>' : '<span>' + ok + ' von ' + r.q.length + ' richtig.' + (ok ? " Mach die offenen Fragen noch fertig." : " Beantworte alle drei.") + '</span>';
     const b = document.getElementById("revJump" + d.n); if (b) { b.textContent = done ? "Wiederholung geschafft ✓" : "Zur Wiederholung"; b.classList.toggle("ok", done); }
   };
@@ -619,7 +627,7 @@ function exCard(d, e, i) {
   const tools = el("div", "row");
   const showBtn = el("button", "btn ghost", "Lösung zeigen"); showBtn.type = "button";
   const aiBtn = el("button", "btn ghost", "KI fragen"); aiBtn.type = "button";
-  aiBtn.addEventListener("click", () => openAI("Ich hänge bei dieser Aufgabe (Tag " + d.n + ", " + d.title + (e.g ? ", Thema " + e.g : "") + "): " + plainQ + " Gib mir zuerst nur einen Tipp, nicht die ganze Lösung."));
+  aiBtn.addEventListener("click", () => openAI("Ich hänge bei dieser Aufgabe (" + W() + " " + d.n + ", " + d.title + (e.g ? ", Thema " + e.g : "") + "): " + plainQ + " Gib mir zuerst nur einen Tipp, nicht die ganze Lösung."));
   showBtn.addEventListener("click", () => { sol.hidden = false; if (mine().x[k] !== "ok") { mine().x[k] = "shown"; save(); } });
   const mark = (ok) => { if (ok) { mine().x[k] = "ok"; c.classList.add("ok"); } save(); };
 
@@ -664,8 +672,8 @@ function exCard(d, e, i) {
 
 function viewExam() {
   const v = el("div", "view"); v.id = "v-klausur";
-  const inf = SUBJ === "inf", mins = inf ? 60 : 90;
-  v.innerHTML = '<div class="dayhead"><span class="eyebrow">' + (inf ? "Wie im Abi · 60 Minuten · " + examMax() + " Punkte" : "Montag, 02.11. · 90 Minuten · 70 Punkte") + '</span><h1>Probeklausur</h1><p class="lede">' + (inf ? "Nur Taschenrechner, keine Unterlagen. Aufgebaut wie die Beispielaufgaben aus dem Unterricht, aber mit neuen Zahlen. Erst nach dem Timer die Lösungen aufklappen und Punkte eintragen." : "Nur Taschenrechner, kein Skript, kein Handy. g = 9,81 m/s². Erst nach dem Timer die Lösungen aufklappen und Punkte eintragen.") + '</p></div>' +
+  const inf = SUBJ !== "phys", mins = inf ? MT().examMins : 90;
+  v.innerHTML = '<div class="dayhead"><span class="eyebrow">' + (inf ? MT().examEyebrow + " · " + mins + " Minuten · " + examMax() + " Punkte" : "Montag, 02.11. · 90 Minuten · 70 Punkte") + '</span><h1>Probeklausur</h1><p class="lede">' + (inf ? MT().examLede : "Nur Taschenrechner, kein Skript, kein Handy. g = 9,81 m/s². Erst nach dem Timer die Lösungen aufklappen und Punkte eintragen.") + '</p></div>' +
     '<div class="card row" style="justify-content:space-between"><div class="stack" style="gap:2px"><span class="eyebrow">Timer</span><span class="timer" id="tmr">' + mins + ':00</span></div><div class="row"><button class="cta" id="tStart" type="button">Start</button><button class="btn" id="tReset" type="button">Zurücksetzen</button></div><div class="stack" style="gap:2px"><span class="eyebrow">Deine Punkte</span><span class="score" id="examTotal">0 / ' + examMax() + '</span><span id="examMsg" style="color:var(--muted);font-size:14px;max-width:32ch"></span></div></div>';
   EXAM.forEach(t => {
     const c = el("section", "card task");
@@ -687,7 +695,7 @@ function viewExam() {
 }
 
 function viewFormulas() {
-  if (SUBJ === "inf") return viewFormulasInf();
+  if (SUBJ !== "phys") return viewFormulasCourse();
   const v = el("div", "view"); v.id = "v-formeln";
   v.innerHTML = '<div class="dayhead"><span class="eyebrow">Schreibweise wie in eurem Formelbuch</span><h1>Formeln</h1><p class="lede">Gleiche Buchstaben wie im Formelbuch, damit es in der Klausur keine Verwechslung gibt. Mit „Formeln abdecken“ werden die Formeln unscharf: erst selbst aufsagen, dann antippen zum Prüfen.</p></div><div class="row"><button class="cta" id="coverBtn" type="button">Formeln abdecken</button></div>';
   const g = el("div", "fgrid");
@@ -703,10 +711,10 @@ function viewFormulas() {
 
 function viewErrors() {
   const v: View = el("div", "view"); v.id = "v-fehler";
-  v.innerHTML = '<div class="dayhead"><span class="eyebrow">Vor der Klausur liest du nur noch das hier und die Formeln</span><h1>Fehlerheft</h1><p class="lede">Jeder Fehler mit einem Satz, z. B. ' + (SUBJ === "inf" ? "„Bei der Trenngeraden das Minus vergessen“" : "„Ich habe cm nicht in m umgerechnet“") + '. Wird gespeichert.</p></div>' +
+  v.innerHTML = '<div class="dayhead"><span class="eyebrow">Vor der Klausur liest du nur noch das hier und die Formeln</span><h1>Fehlerheft</h1><p class="lede">Jeder Fehler mit einem Satz, z. B. ' + (SUBJ !== "phys" ? MT().errExample : "„Ich habe cm nicht in m umgerechnet“") + '. Wird gespeichert.</p></div>' +
     '<form class="fe-add" id="feForm"><input id="feIn" type="text" placeholder="Was ist schiefgegangen?" autocomplete="off"><button class="cta" type="submit">Eintragen</button></form><ul class="fe-list" id="feList"></ul>';
   const list = v.querySelector("#feList");
-  const render = () => { list.innerHTML = ""; if (!mine().f.length) { list.appendChild(el("li", "", '<span class="d">–</span><span style="color:var(--muted)">Noch keine Einträge. Der erste kommt nach dem Selbsttest an Tag 1.</span><span></span>')); return; }
+  const render = () => { list.innerHTML = ""; if (!mine().f.length) { list.appendChild(el("li", "", '<span class="d">–</span><span style="color:var(--muted)">Noch keine Einträge. Der erste kommt nach dem Selbsttest an ' + W() + ' 1.</span><span></span>')); return; }
     mine().f.slice().reverse().forEach((f, ri) => { const idx = mine().f.length - 1 - ri; const li = el("li"); li.appendChild(el("span", "d", f.d)); const t = el("span"); t.textContent = f.t; li.appendChild(t); const b = el("button", "", "Löschen"); b.type = "button"; b.addEventListener("click", () => { mine().f.splice(idx, 1); save(); render(); }); li.appendChild(b); list.appendChild(li); }); };
   v.querySelector("#feForm").addEventListener("submit", ev => { ev.preventDefault(); const i = v.querySelector<HTMLInputElement>("#feIn"); const t = i.value.trim(); if (!t) return; const now = new Date(); mine().f.push({ t, d: String(now.getDate()).padStart(2, "0") + "." + String(now.getMonth() + 1).padStart(2, "0") + "." }); i.value = ""; save(); render(); });
   v._render = render; render();
@@ -727,7 +735,7 @@ function viewErrors() {
 }
 
 function viewRules() {
-  if (SUBJ === "inf") return viewRulesInf();
+  if (SUBJ !== "phys") return viewRulesCourse();
   const v = el("div", "view"); v.id = "v-regeln";
   v.innerHTML = '<div class="dayhead"><span class="eyebrow">Für euch zwei</span><h1>Spielregeln</h1></div>' +
   '<section class="card"><ul class="stack" style="padding-left:20px;margin:0">' +
@@ -744,64 +752,57 @@ function viewRules() {
   return v;
 }
 
-function viewStartInf() {
+function viewStartCourse() {
+  const m = MT();
   const v = el("div", "view"); v.id = "v-start";
   const mode = modeOf(), next = DAYS.find(d => dayStats(d).pct < 100);
   const pick = mine().mode;
   v.innerHTML =
   '<div class="card hero">' +
-    '<div class="eyebrow">Informatik · Künstliche Intelligenz · Neuronale Netze</div>' +
-    '<h1 style="margin-top:8px">' + (who ? who + ", auf " : "Auf ") + (mode === "gut" ? '<em>eine gute Note</em>' : '<em>15 Punkte</em>') + ' bei neuronalen Netzen.</h1>' +
-    '<p class="sub">' + DAYS.length + ' Lerntage, aufgebaut auf eurem OneNote-Abschnitt KI → Neuronale Netze, von „Perzeptron Einführung“ bis „Ü2 Ähnliche Abiaufgabe“. Die Kurve unten wird größer, je mehr du erledigst.</p>' +
+    '<div class="eyebrow">' + m.eyebrow + '</div>' +
+    '<h1 style="margin-top:8px">' + (who ? who + ", auf " : "Auf ") + (mode === "gut" ? '<em>eine gute Note</em>' : '<em>15 Punkte</em>') + ' ' + m.topic + '</h1>' +
+    '<p class="sub">' + m.intro + '</p>' +
     '<canvas id="scope" aria-hidden="true"></canvas>' +
     '<div class="stats">' +
-      '<div class="stat"><span class="v">' + DAYS.length + '</span><span class="l">Lerntage</span></div>' +
+      '<div class="stat"><span class="v">' + DAYS.length + '</span><span class="l">' + m.unitsLabel + '</span></div>' +
       '<div class="stat"><span class="v" id="stPct">0%</span><span class="l">Gesamtfortschritt</span></div>' +
       '<div class="stat"><span class="v" id="stEx">0/0</span><span class="l">Übungen richtig</span></div>' +
       '<div class="stat"><span class="v" id="stExam">–</span><span class="l">Probeklausur</span></div>' +
     '</div>' +
-    '<div class="row" style="margin-top:16px"><button type="button" class="cta" data-go="' + (next ? "tag" + next.n : "klausur") + '">' + (next ? (next.n === 1 && !dayStats(next).got ? "Mit Tag 1 starten" : "Weiter mit Tag " + next.n) : "Zur Probeklausur") + '</button><span style="color:var(--muted)">' + (next ? "Als Nächstes: <b>" + next.title + "</b>." : "Alle Lerntage sind geschafft.") + '</span></div>' +
+    '<div class="row" style="margin-top:16px"><button type="button" class="cta" data-go="' + (next ? "tag" + next.n : "klausur") + '">' + (next ? (next.n === 1 && !dayStats(next).got ? "Mit " + m.word + " 1 starten" : "Weiter mit " + m.word + " " + next.n) : "Zur Probeklausur") + '</button><span style="color:var(--muted)">' + (next ? "Als Nächstes: <b>" + next.title + "</b>." : "Alles ist geschafft.") + '</span></div>' +
   '</div>' +
   '<section class="card"><h2>Dein Ziel <span class="cnt">' + (pick ? "jederzeit änderbar" : "such dir eins aus") + '</span></h2><div class="goal-pick">' +
-    '<button type="button" class="goal-opt' + (mode === "15" ? " on" : "") + '" data-mode="15" aria-pressed="' + (mode === "15") + '"><b>15 Punkte</b><small>Alles, richtig gründlich: jede Erklärung, alle Übungen, Sonderfälle und Code. So wie bei Physik.</small></button>' +
-    '<button type="button" class="goal-opt' + (mode === "gut" ? " on" : "") + '" data-mode="gut" aria-pressed="' + (mode === "gut") + '"><b>Gute Note</b><small>Nur das Wichtigste, das sicher drankommt. Weniger Übungen, kürzere Tage, trotzdem alle Grundaufgaben aus dem Abi.</small></button>' +
+    '<button type="button" class="goal-opt' + (mode === "15" ? " on" : "") + '" data-mode="15" aria-pressed="' + (mode === "15") + '"><b>15 Punkte</b><small>' + m.goal15 + '</small></button>' +
+    '<button type="button" class="goal-opt' + (mode === "gut" ? " on" : "") + '" data-mode="gut" aria-pressed="' + (mode === "gut") + '"><b>Gute Note</b><small>' + m.goalGut + '</small></button>' +
   '</div></section>' +
   '<section class="card" id="duo"><h2>Alle im Vergleich <span class="cnt" id="ppCnt"></span></h2><div id="ppBody"></div></section>' +
-  '<section class="card"><h2>Fortschritt pro Tag <span class="cnt">Blöcke, Checklisten und Übungen · <span id="stCk"></span> Checkpunkte</span></h2>' +
+  '<section class="card"><h2>Fortschritt pro ' + m.word + ' <span class="cnt">Blöcke, Checklisten und Übungen · <span id="stCk"></span> Checkpunkte</span></h2>' +
     '<div class="chart-wrap"><svg id="chart" viewBox="0 0 640 230" role="img" aria-label="Fortschritt pro Lerntag in Prozent"></svg></div>' +
     '<div class="legend" id="legend"></div>' +
   '</section>' +
-  '<section class="card stack"><h2>So funktioniert es</h2><p>Jeder Tag beginnt mit „Erst verstehen“: kurze Erklärungen mit Beispielen, sodass du kein Video brauchst. Danach kommen Übungen, die du direkt hier lösen kannst, und am Ende eine Checkliste „Du kannst …“. Ein Haken zählt nur, wenn du es <b>ohne Hilfe</b> kannst. Zum Schluss schreibst du die Probeklausur. Ab 90 % bist du bereit.</p>' +
+  '<section class="card stack"><h2>So funktioniert es</h2><p>' + m.how + '</p>' +
   '<p><span class="tag t-skript">Skript</span>euer Unterrichtsstoff &nbsp; <span class="tag t-ueben">Üben</span>Aufgaben &nbsp; <span class="tag t-test">Test</span>Selbsttest ohne Hilfe</p></section>';
   v.querySelectorAll<HTMLButtonElement>(".goal-opt").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
   return v;
 }
 
-function viewFormulasInf() {
+function viewFormulasCourse() {
+  const m = MT();
   const v = el("div", "view"); v.id = "v-formeln";
-  v.innerHTML = '<div class="dayhead"><span class="eyebrow">Schreibweise wie im Unterricht</span><h1>Formeln und Begriffe</h1><p class="lede">Alles, was du für Perzeptron, Trenngerade, Lernregel und mehrschichtige Netze brauchst. Mit „Formeln abdecken“ werden die Formeln unscharf: erst selbst aufsagen, dann antippen zum Prüfen.</p></div><div class="row"><button class="cta" id="coverBtn" type="button">Formeln abdecken</button></div>';
+  v.innerHTML = '<div class="dayhead"><span class="eyebrow">' + m.formulasEyebrow + '</span><h1>' + m.formulasTitle + '</h1><p class="lede">' + m.formulasLede + ' Mit „Formeln abdecken“ werden die Formeln unscharf: erst selbst aufsagen, dann antippen zum Prüfen.</p></div><div class="row"><button class="cta" id="coverBtn" type="button">Formeln abdecken</button></div>';
   const g = el("div", "fgrid");
-  const sy = el("div", "card"); sy.innerHTML = '<h3>Welches Zeichen ist was?</h3><table class="ftable sym">' + INF_SYMBOLS.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join("") + '</table>'; g.appendChild(sy);
-  INF_FORMULAS.forEach(([t, rows]) => { const c = el("div", "card"); c.innerHTML = "<h3>" + t + '</h3><table class="ftable">' + rows.map(r => "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td></tr>").join("") + "</table>"; g.appendChild(c); });
+  const sy = el("div", "card"); sy.innerHTML = '<h3>Welches Zeichen ist was?</h3><table class="ftable sym">' + m.symbols.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join("") + '</table>'; g.appendChild(sy);
+  m.formulas.forEach(([t, rows]) => { const c = el("div", "card"); c.innerHTML = "<h3>" + t + '</h3><table class="ftable">' + rows.map(r => "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td></tr>").join("") + "</table>"; g.appendChild(c); });
   v.appendChild(g);
-  v.appendChild(el("div", "note warn", "<b>Die " + INF_KILLERS.length + " häufigsten Punktkiller</b><ul>" + INF_KILLERS.map(k => "<li>" + k + "</li>").join("") + "</ul>"));
+  v.appendChild(el("div", "note warn", "<b>Die " + m.killers.length + " häufigsten Punktkiller</b><ul>" + m.killers.map(k => "<li>" + k + "</li>").join("") + "</ul>"));
   v.querySelector("#coverBtn").addEventListener("click", ev => { const on = document.body.classList.toggle("cover"); (ev.target as HTMLElement).textContent = on ? "Formeln zeigen" : "Formeln abdecken"; v.querySelectorAll(".peek").forEach(x => x.classList.remove("peek")); });
   v.addEventListener("click", ev => { const td = (ev.target as Element).closest(".ftable td:last-child"); if (td && document.body.classList.contains("cover")) td.classList.toggle("peek"); });
   return v;
 }
 
-function viewRulesInf() {
+function viewRulesCourse() {
   const v = el("div", "view"); v.id = "v-regeln";
-  v.innerHTML = '<div class="dayhead"><span class="eyebrow">Für euch zwei</span><h1>Spielregeln</h1></div>' +
-  '<section class="card"><ul class="stack" style="padding-left:20px;margin:0">' +
-  '<li><b>Handy weg.</b> Ein Lerntag dauert je nach Ziel 1,5 bis 2 Stunden. Ist etwas schneller klar, geht es weiter.</li>' +
-  '<li><b>Erklär-Regel:</b> Nach jeder Erklärung erklärt einer dem anderen das Thema in 2 Minuten ohne Zettel. Wo ihr hängt, ist eure Lücke.</li>' +
-  '<li><b>Rechnen auf Papier:</b> z, Trenngerade und Lernschritt immer mit Formel und Zwischenschritten aufschreiben. Im Abi gibt es dafür Teilpunkte.</li>' +
-  '<li><b>Code auf Papier:</b> Pseudocode erst selbst schreiben, dann mit der Lösung vergleichen. Im Abi gibt es keinen Computer.</li>' +
-  '<li><b>Fehlerheft:</b> Jeder Fehler mit einem Satz. Vor dem Abi liest du nur noch das Fehlerheft und die Formeln.</li></ul></section>' +
-  '<div class="note tip"><b>Lehrer beeindrucken</b>Bei „Begründen Sie“ und „Nehmen Sie Stellung“ immer drei Teile: Aussage richtig oder falsch, Grund, Beispiel. Bei Rechnungen erst die allgemeine Formel, dann eingesetzt, dann Ergebnis.</div>' +
-  '<section class="card stack"><h2>Was im Abi 2027 drankommt</h2><p>Laut Eingrenzung in eurem Notizbuch (Aufgabe 4, Künstliche Intelligenz, 20 BE):</p><ul style="padding-left:20px;margin:0" class="stack"><li>BPE 13.1: Die Suche nach Problemlösungen, Spiele (Minimax)</li><li>BPE 13.2: Formen des maschinellen Lernens, Entscheidungsbaumlernen, k-Means-Clustering, <b>Neuronale Netze</b></li></ul><p>Dieser Plan deckt die neuronalen Netze und die Formen des maschinellen Lernens ab. Entscheidungsbäume, k-Means und die Suche stehen in eigenen Abschnitten im OneNote.</p></section>' +
-  '<p style="color:var(--muted);font-size:14px">Grundlage: OneNote „25 TG12_3 IT, INF-Notizbuch“, Abschnitt KI, Unterabschnitt Neuronale Netze: Perzeptron Einführung, Perzeptron mit Bias, Perzeptron: Lernregel, Ü1 Perzeptron (Entscheidungsregel), Perzeptron: mehrere Schichten, Ü1 Beispielaufgabe Abi, Ü2 Ähnliche Abiaufgabe.</p>';
+  v.innerHTML = MT().rulesHtml;
   return v;
 }
 
@@ -883,7 +884,7 @@ function startScope() {
     for (let x = 0; x <= w; x += 2) { const y = h / 2 - A * Math.sin(x / w * Math.PI * 6 - ph); x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
     ctx.stroke();
     ctx.fillStyle = col.muted; ctx.font = "11px " + col.mono;
-    ctx.fillText((SUBJ === "inf" ? "" : "s<sub>max</sub> = ") + Math.round(amp * 100) + " % erledigt", 8, 14);
+    ctx.fillText((SUBJ !== "phys" ? "" : "s<sub>max</sub> = ") + Math.round(amp * 100) + " % erledigt", 8, 14);
     if (!cv.isConnected || views.start.hidden) return;
     if (!reduce || Math.abs(target - shown) > 0.002) scopeRAF = requestAnimationFrame(frame);
   };
@@ -896,6 +897,45 @@ const RULES = "Du bist ein geduldiger Physik-Nachhilfelehrer für einen Oberstuf
 const RULES_INF = "Du bist ein geduldiger Informatik-Nachhilfelehrer für einen Schüler im Technischen Gymnasium in Baden-Württemberg. Er lernt für das Abitur 2027, Thema Künstliche Intelligenz, Schwerpunkt neuronale Netze.\n\n" +
  "Regeln für deine Antworten:\n- Antworte auf Deutsch, in Du-Form, freundlich und direkt.\n- Erkläre einfach und Schritt für Schritt, mit konkreten Zahlen, wenn es hilft.\n- Schreibe Formeln als normalen Text mit Unicode (w₀, x₁, θ, ŷ, α, σ, e⁻ᶻ, Σ), niemals LaTeX und keine Dollarzeichen.\n- Halte dich kurz (meist unter 180 Wörtern), außer er bittet um mehr.\n- Bittet er um einen Tipp, gib nur den nächsten Schritt, nicht die ganze Lösung.\n- Benutze die Schreibweise aus dem Unterricht: Eingaben xᵢ, Gewichte wᵢ, Bias w₀ mit Eingang 1, Schwellwert θ (w₀ = −θ), Nettoinput z = w₀ + w₁x₁ + … + wₙxₙ, Heaviside H(z) = 1 für z ≥ 0 sonst 0, ReLU(z) = max(0, z), Sigmoid σ(z) = 1/(1 + e⁻ᶻ), Softmax e^(z_k)/Σ e^(zᵢ), Trenngerade y = −(w₁/w₂)x − w₀/w₂, Lernregel Δwᵢ = α·(y − ŷ)·xᵢ, Δw₀ = α·(y − ŷ), wᵢ := wᵢ + Δwᵢ, mehrschichtig a⁽¹⁾ = x, z⁽ˡ⁾ = W⁽ˡ⁻¹⁾a⁽ˡ⁻¹⁾ + b⁽ˡ⁻¹⁾, a⁽ˡ⁾ = g(z⁽ˡ⁾), ŷ = a⁽ᴸ⁾.\n- Pseudocode im Stil des Abiturs: OPERATION name(param: FKZ): GZ, :=, WENN … DANN … SONST … ENDE WENN, FÜR … ENDE FÜR, RÜCKGABE, Liste<FKZ>, exp(z). Auf Wunsch auch Python.\n- Wenn er dich abfragen will, stelle eine Frage nach der anderen und warte auf seine Antwort.\n\n" +
  "Stoff laut Unterricht: Formen des maschinellen Lernens (überwacht, unüberwacht, bestärkend; symbolisch, subsymbolisch, hybrid), KI ohne Lernen (Minimax), Perzeptron als UND und ODER, Entscheidungsregel mit Schwellwert, Bias, lineare Separierbarkeit, Trenngerade, XOR-Problem, Lernregel, mehrschichtige Netze mit ReLU, Sigmoid und Softmax, Pseudocode-Operationen vorhersage, berechneNettoinput, vorhersageReLU und softmaxAlle.";
+const INF_META: CourseMeta = {
+  brand: "Neuronale Netze",
+  label: "Informatik",
+  word: "Tag",
+  unitsLabel: "Lerntage",
+  eyebrow: "Informatik · Künstliche Intelligenz · Neuronale Netze",
+  topic: "bei neuronalen Netzen.",
+  intro: INF_DAYS.length + " Lerntage, aufgebaut auf eurem OneNote-Abschnitt KI → Neuronale Netze, von „Perzeptron Einführung“ bis „Ü2 Ähnliche Abiaufgabe“. Die Kurve unten wird größer, je mehr du erledigst.",
+  goal15: "Alles, richtig gründlich: jede Erklärung, alle Übungen, Sonderfälle und Code. So wie bei Physik.",
+  goalGut: "Nur das Wichtigste, das sicher drankommt. Weniger Übungen, kürzere Tage, trotzdem alle Grundaufgaben aus dem Abi.",
+  how: "Jeder Tag beginnt mit „Erst verstehen“: kurze Erklärungen mit Beispielen, sodass du kein Video brauchst. Danach kommen Übungen, die du direkt hier lösen kannst, und am Ende eine Checkliste „Du kannst …“. Ein Haken zählt nur, wenn du es <b>ohne Hilfe</b> kannst. Zum Schluss schreibst du die Probeklausur. Ab 90 % bist du bereit.",
+  navExam: "60 min, " + INF_EXAM.reduce((a, t) => a + t.p, 0) + " Punkte",
+  examMins: 60,
+  examEyebrow: "Wie im Abi",
+  examLede: "Nur Taschenrechner, keine Unterlagen. Aufgebaut wie die Beispielaufgaben aus dem Unterricht, aber mit neuen Zahlen. Erst nach dem Timer die Lösungen aufklappen und Punkte eintragen.",
+  beforeExam: "Vor dem Abi",
+  formulasEyebrow: "Schreibweise wie im Unterricht",
+  formulasTitle: "Formeln und Begriffe",
+  formulasLede: "Alles, was du für Perzeptron, Trenngerade, Lernregel und mehrschichtige Netze brauchst.",
+  formulasNav: "Formeln und Begriffe",
+  symbols: INF_SYMBOLS,
+  formulas: INF_FORMULAS,
+  killers: INF_KILLERS,
+  rulesHtml: '<div class="dayhead"><span class="eyebrow">Für euch zwei</span><h1>Spielregeln</h1></div>' +
+  '<section class="card"><ul class="stack" style="padding-left:20px;margin:0">' +
+  '<li><b>Handy weg.</b> Ein Lerntag dauert je nach Ziel 1,5 bis 2 Stunden. Ist etwas schneller klar, geht es weiter.</li>' +
+  '<li><b>Erklär-Regel:</b> Nach jeder Erklärung erklärt einer dem anderen das Thema in 2 Minuten ohne Zettel. Wo ihr hängt, ist eure Lücke.</li>' +
+  '<li><b>Rechnen auf Papier:</b> z, Trenngerade und Lernschritt immer mit Formel und Zwischenschritten aufschreiben. Im Abi gibt es dafür Teilpunkte.</li>' +
+  '<li><b>Code auf Papier:</b> Pseudocode erst selbst schreiben, dann mit der Lösung vergleichen. Im Abi gibt es keinen Computer.</li>' +
+  '<li><b>Fehlerheft:</b> Jeder Fehler mit einem Satz. Vor dem Abi liest du nur noch das Fehlerheft und die Formeln.</li></ul></section>' +
+  '<div class="note tip"><b>Lehrer beeindrucken</b>Bei „Begründen Sie“ und „Nehmen Sie Stellung“ immer drei Teile: Aussage richtig oder falsch, Grund, Beispiel. Bei Rechnungen erst die allgemeine Formel, dann eingesetzt, dann Ergebnis.</div>' +
+  '<section class="card stack"><h2>Was im Abi 2027 drankommt</h2><p>Laut Eingrenzung in eurem Notizbuch (Aufgabe 4, Künstliche Intelligenz, 20 BE):</p><ul style="padding-left:20px;margin:0" class="stack"><li>BPE 13.1: Die Suche nach Problemlösungen, Spiele (Minimax)</li><li>BPE 13.2: Formen des maschinellen Lernens, Entscheidungsbaumlernen, k-Means-Clustering, <b>Neuronale Netze</b></li></ul><p>Dieser Plan deckt die neuronalen Netze und die Formen des maschinellen Lernens ab. Entscheidungsbäume, k-Means und die Suche stehen in eigenen Abschnitten im OneNote.</p></section>' +
+  '<p style="color:var(--muted);font-size:14px">Grundlage: OneNote „25 TG12_3 IT, INF-Notizbuch“, Abschnitt KI, Unterabschnitt Neuronale Netze: Perzeptron Einführung, Perzeptron mit Bias, Perzeptron: Lernregel, Ü1 Perzeptron (Entscheidungsregel), Perzeptron: mehrere Schichten, Ü1 Beispielaufgabe Abi, Ü2 Ähnliche Abiaufgabe.</p>',
+  ai: RULES_INF,
+  tutor: "neuronale Netze",
+  sugs: ["Erklär mir das Perzeptron, als wäre ich in der 9. Klasse.", "Warum kann ein Perzeptron XOR nicht?", "Gib mir eine neue Aufgabe zur Trenngeraden mit Lösung zum Aufklappen.", "Frag mich die Aktivierungsfunktionen ab, eine Frage nach der anderen."],
+  errExample: "„Bei der Trenngeraden das Minus vergessen“"
+};
+const META: Record<Course, CourseMeta> = { inf: INF_META, mat: MAT_META };
 let sample = null, turns = [], ctl = null, busy = false;
 let aiOffText = "Der KI-Tutor läuft über Claude und funktioniert, wenn du die Seite in Claude geöffnet hast (claude.ai oder die Claude-App). Dafür brauchst du keinen API-Schlüssel. Beim ersten Frage-Klick fragt Claude einmal, ob die Seite deine Claude-Nutzung verwenden darf.";
 async function serverSample(input, opts) {
@@ -931,9 +971,9 @@ function addMsg(role, html) { const m = el("div", "msg " + role); m.innerHTML = 
 function emptyState() {
   msgs.innerHTML = "";
   if (sample === null) { msgs.appendChild(el("div", "ai-off", aiOffText)); return; }
-  addMsg("a", "<p>Hi" + (who ? " " + who : "") + "! Ich bin dein Tutor für " + (SUBJ === "inf" ? "neuronale Netze" : "Kapitel 13") + ". Frag mich alles, lass dir etwas einfacher erklären oder lass dich abfragen.</p>");
+  addMsg("a", "<p>Hi" + (who ? " " + who : "") + "! Ich bin dein Tutor für " + (SUBJ !== "phys" ? MT().tutor : "Kapitel 13") + ". Frag mich alles, lass dir etwas einfacher erklären oder lass dich abfragen.</p>");
   const sg = el("div", "sugs");
-  (SUBJ === "inf" ? ["Erklär mir das Perzeptron, als wäre ich in der 9. Klasse.", "Warum kann ein Perzeptron XOR nicht?", "Gib mir eine neue Aufgabe zur Trenngeraden mit Lösung zum Aufklappen.", "Frag mich die Aktivierungsfunktionen ab, eine Frage nach der anderen."] : ["Erklär mir die DGL vom Federpendel, als wäre ich in der 9. Klasse.", "Warum steht in F = −D·s ein Minus?", "Frag mich die Formeln von Tag 4 ab, eine Frage nach der anderen.", "Gib mir eine neue Übungsaufgabe zum Fadenpendel mit Lösung zum Aufklappen."]).forEach(t => { const b = el("button", "sug", t); b.type = "button"; b.addEventListener("click", () => send(t)); sg.appendChild(b); });
+  (SUBJ !== "phys" ? MT().sugs : ["Erklär mir die DGL vom Federpendel, als wäre ich in der 9. Klasse.", "Warum steht in F = −D·s ein Minus?", "Frag mich die Formeln von Tag 4 ab, eine Frage nach der anderen.", "Gib mir eine neue Übungsaufgabe zum Fadenpendel mit Lösung zum Aufklappen."]).forEach(t => { const b = el("button", "sug", t); b.type = "button"; b.addEventListener("click", () => send(t)); sg.appendChild(b); });
   msgs.appendChild(sg);
 }
 function openAI(prefill?: string) {
@@ -969,7 +1009,7 @@ async function send(text) {
   const stopT = setTimeout(() => { if (!gotText) { timedOut = true; thisCtl.abort(); } }, 60000);
   const ctxLine = (who ? "Du sprichst mit " + who + ". " : "") + "Er schaut gerade auf: " + document.getElementById("aiCtx").textContent + ".";
   try {
-    const { text: ans } = await sample([{ role: "user", content: (SUBJ === "inf" ? RULES_INF : RULES) + "\n\n" + ctxLine + "\n\nAb jetzt kommt das Gespräch." }].concat(turns), {
+    const { text: ans } = await sample([{ role: "user", content: (SUBJ !== "phys" ? MT().ai : RULES) + "\n\n" + ctxLine + "\n\nAb jetzt kommt das Gespräch." }].concat(turns), {
       cache: false, signal: thisCtl.signal, onText: ({ text }) => { gotText = true; bubble.innerHTML = mdToHtml(text); msgs.scrollTop = msgs.scrollHeight; }
     });
     bubble.innerHTML = mdToHtml(ans);
@@ -1305,17 +1345,17 @@ const plain = h => String(h).replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()
 const cut = (t, n) => t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t;
 function blockTitle(d, i) { const m = d.blocks[i][2].match(/<b>(.*?)<\/b>/); return cut(plain(m ? m[1] : d.blocks[i][2]).replace(/[.:]$/, ""), 70); }
 function examScoreOf(st) { let s = 0; EXAM.forEach(t => { const v = parseFloat(st.p[t.n]); if (!isNaN(v)) s += Math.max(0, Math.min(t.p, v)); }); return s; }
-function diffEvents(a, b, kp = "", tp = "") {
-  const ev = [], me = who, vp = kp ? "inf:" : "";
+function diffEvents(a, b, kp = "", tp = "", vp = "") {
+  const ev = [], me = who;
   DAYS.forEach(d => {
     d.blocks.forEach((_, i) => {
       const k = d.n + "." + i, was = !!a.b[k], now = !!b.b[k];
-      if (now && !was) ev.push({ key: kp + "b:" + k, type: "block", text: tp + me + " hat in Tag " + d.n + " „" + blockTitle(d, i) + "“ erledigt.", view: vp + "tag" + d.n, anchor: "b" + d.n + "_" + i });
+      if (now && !was) ev.push({ key: kp + "b:" + k, type: "block", text: tp + me + " hat in " + W() + " " + d.n + " „" + blockTitle(d, i) + "“ erledigt.", view: vp + "tag" + d.n, anchor: "b" + d.n + "_" + i });
       if (was && !now) ev.push({ key: kp + "b:" + k, remove: true });
     });
     d.checks.forEach((c, i) => {
       const k = d.n + "." + i, was = !!a.c[k], now = !!b.c[k];
-      if (now && !was) ev.push({ key: kp + "c:" + k, type: "check", text: tp + me + " hat abgehakt: „" + cut(c.replace(/_max/g, "max"), 90) + "“ (Tag " + d.n + ")", view: vp + "tag" + d.n, anchor: "c" + d.n + "_" + i });
+      if (now && !was) ev.push({ key: kp + "c:" + k, type: "check", text: tp + me + " hat abgehakt: „" + cut(c.replace(/_max/g, "max"), 90) + "“ (" + W() + " " + d.n + ")", view: vp + "tag" + d.n, anchor: "c" + d.n + "_" + i });
       if (was && !now) ev.push({ key: kp + "c:" + k, remove: true });
     });
     d.ex.forEach((e, i) => {
@@ -1325,10 +1365,10 @@ function diffEvents(a, b, kp = "", tp = "") {
       if (was && !now) ev.push({ key: kp + "x:" + k, remove: true });
     });
     const pa = dayStats(d, a).pct, pb = dayStats(d, b).pct;
-    if (pb === 100 && pa < 100) ev.push({ key: kp + "day:" + d.n, type: "day", text: tp + me + " hat Tag " + d.n + " („" + d.title + "“) komplett geschafft.", view: vp + "tag" + d.n, anchor: "" });
+    if (pb === 100 && pa < 100) ev.push({ key: kp + "day:" + d.n, type: "day", text: tp + me + " hat " + W() + " " + d.n + " („" + d.title + "“) komplett geschafft.", view: vp + "tag" + d.n, anchor: "" });
     if (pa === 100 && pb < 100) ev.push({ key: kp + "day:" + d.n, remove: true });
     const ra = reviewDone(d, a), rb = reviewDone(d, b);
-    if (rb && !ra) ev.push({ key: kp + "rev:" + d.n, type: "check", text: tp + me + " hat die Wiederholung von Tag " + d.n + " geschafft.", view: vp + "tag" + d.n, anchor: "rev" + d.n });
+    if (rb && !ra) ev.push({ key: kp + "rev:" + d.n, type: "check", text: tp + me + " hat die Wiederholung von " + W() + " " + d.n + " geschafft.", view: vp + "tag" + d.n, anchor: "rev" + d.n });
     if (ra && !rb) ev.push({ key: kp + "rev:" + d.n, remove: true });
   });
   const oa = allStats(a).pct, ob = allStats(b).pct;
@@ -1351,8 +1391,8 @@ function allEvents(a, b) {
   try {
     useCourse("phys");
     const ev = diffEvents(a, b);
-    useCourse("inf");
-    return ev.concat(diffEvents(fill(a).inf, fill(b).inf, "i", "Informatik: "));
+    COURSE_KEYS.forEach(c => { useCourse(c); ev.push(...diffEvents(fill(a)[c], fill(b)[c], c[0], META[c].label + ": ", c + ":")); });
+    return ev;
   } finally { useCourse(keep); }
 }
 function queueEvents() {
@@ -1437,8 +1477,9 @@ document.addEventListener("keydown", ev => { if (ev.key === "Escape" && ncOpen()
 
 function openTarget(n) {
   const view = n.view || "start";
-  setSubject(view.startsWith("inf:") ? "inf" : "phys");
-  go(view.replace(/^inf:/, ""));
+  const m = view.match(/^(inf|mat):(.*)$/);
+  setSubject(m ? m[1] as Subject : "phys");
+  go(m ? m[2] : view);
   requestAnimationFrame(() => requestAnimationFrame(() => {
     let t = n.anchor ? document.getElementById(n.anchor) : null;
     if (t) t = t.closest(".blk, .checks label, .ex, .task, section, .card") || t;
@@ -1491,8 +1532,8 @@ function refreshPartnerMarks() {
 
 function renderSubject() {
   document.querySelectorAll<HTMLButtonElement>("#subjSeg button").forEach(b => { const on = b.dataset.subj === SUBJ; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
-  document.getElementById("brandTxt").textContent = SUBJ === "inf" ? "Neuronale Netze" : "Schwingungen · 15";
-  document.getElementById("topChip").innerHTML = SUBJ === "inf" ? 'Ziel: <b id="cdTop">' + (modeOf() === "gut" ? "Gute Note" : "15 Punkte") + '</b>' : 'Klausur in <b id="cdTop">' + Math.max(daysLeft(), 0) + ' Tagen</b>';
+  document.getElementById("brandTxt").textContent = SUBJ !== "phys" ? MT().brand : "Schwingungen · 15";
+  document.getElementById("topChip").innerHTML = SUBJ !== "phys" ? 'Ziel: <b id="cdTop">' + (modeOf() === "gut" ? "Gute Note" : "15 Punkte") + '</b>' : 'Klausur in <b id="cdTop">' + Math.max(daysLeft(), 0) + ' Tagen</b>';
 }
 function setSubject(s: Subject) {
   if (s === SUBJ) return;
@@ -1504,7 +1545,7 @@ function setSubject(s: Subject) {
   rebuildAll();
 }
 function setMode(m: string) {
-  if (SUBJ !== "inf") return;
+  if (SUBJ === "phys") return;
   mine().mode = m;
   save();
   renderSubject();
@@ -1512,6 +1553,7 @@ function setMode(m: string) {
   rebuildAll();
 }
 document.getElementById("subjSeg").addEventListener("click", ev => { const b = (ev.target as Element).closest<HTMLButtonElement>("button[data-subj]"); if (b) setSubject(b.dataset.subj as Subject); });
+NAV = makeNav();
 renderSubject();
 buildNav();
 renderAccount();

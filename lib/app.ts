@@ -1355,7 +1355,7 @@ function diffEvents(a, b, kp = "", tp = "", vp = "") {
     });
     d.checks.forEach((c, i) => {
       const k = d.n + "." + i, was = !!a.c[k], now = !!b.c[k];
-      if (now && !was) ev.push({ key: kp + "c:" + k, type: "check", text: tp + me + " hat abgehakt: „" + cut(c.replace(/_max/g, "max"), 90) + "“ (" + W() + " " + d.n + ")", view: vp + "tag" + d.n, anchor: "c" + d.n + "_" + i });
+      if (now && !was) ev.push({ key: kp + "c:" + k, type: "check", text: tp + me + " hat abgehakt: „" + cut(plain(c.replace(/_max/g, "max")), 90) + "“ (" + W() + " " + d.n + ")", view: vp + "tag" + d.n, anchor: "c" + d.n + "_" + i });
       if (was && !now) ev.push({ key: kp + "c:" + k, remove: true });
     });
     d.ex.forEach((e, i) => {

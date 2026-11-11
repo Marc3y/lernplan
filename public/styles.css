@@ -635,3 +635,6 @@ body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-event
 }
 .cv { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; line-height: 1.15; font-size: 0.92em; padding: 1px 6px; margin: 1px 2px; border-left: 1.5px solid currentColor; border-right: 1.5px solid currentColor; border-radius: 7px; font-variant-numeric: tabular-nums; }
 .opt .cv { font-size: 0.85em; }
+.vk { position: relative; display: inline-block; padding-top: 0.3em; line-height: 1; white-space: nowrap; }
+.vk::before { content: ""; position: absolute; left: 0.05em; right: 0.06em; top: 0.12em; border-top: 0.08em solid currentColor; }
+.vk::after { content: ""; position: absolute; right: 0.05em; top: 0.05em; width: 0.17em; height: 0.17em; border-top: 0.08em solid currentColor; border-right: 0.08em solid currentColor; transform: rotate(45deg); }

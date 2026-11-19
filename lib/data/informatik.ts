@@ -48,7 +48,7 @@ function svgMlp() {
   let s = '<svg class="lfig" viewBox="0 0 360 200" role="img" aria-label="Mehrschichtiges Netz mit zwei Eingängen, zwei verdeckten Neuronen und einem Ausgang">';
   [[60, 70], [60, 140]].forEach(([x, y]) => { s += ln(x + 16, y, 164, 70) + ln(x + 16, y, 164, 140); });
   s += ln(76, 22, 164, 70) + ln(76, 22, 164, 140) + ln(196, 70, 284, 105) + ln(196, 140, 284, 105) + ln(196, 22, 284, 105);
-  s += node(60, 22, "1") + node(60, 70, "x₁") + node(60, 140, "x₂") + node(180, 22, "1") + node(180, 70, "h₁", "lc") + node(180, 140, "h₂", "lc") + node(300, 105, "ŷ", "lc");
+  s += node(60, 22, "1") + node(60, 70, "x₁") + node(60, 140, "x₂") + node(180, 22, "1") + node(180, 70, "h₁", "lc") + node(180, 140, "h₂", "lc") + node(300, 105, "out", "lc");
   s += '<text x="60" y="185" text-anchor="middle">Eingabe</text><text x="180" y="185" text-anchor="middle">verdeckte Schicht</text><text x="300" y="185" text-anchor="middle">Ausgabe</text></svg>';
   return s;
 }
@@ -112,11 +112,11 @@ export const INF_DAYS: Day[] = [
    core: { b: [0, 1, 2, 4, 5], c: [0, 1, 2] },
    ex: [
     { t: "num", g: "Summe und Ausgabe", k: true, q: "Eingaben x₁ = 1, x₂ = 1, Gewichte w₁ = 0,4 und w₂ = 0,3. Wie groß ist z?", a: 0.7, s: "z = 0,4·1 + 0,3·1 = 0,7" },
-    { t: "num", g: "Summe und Ausgabe", k: true, q: "Gleiches Perzeptron, Schwellwert θ = 0,8. Was gibt es aus (0 oder 1)?", a: 0, s: "z = 0,7 ist kleiner als θ = 0,8, also y = 0." },
+    { t: "num", g: "Summe und Ausgabe", k: true, q: "Gleiches Perzeptron, Schwellwert θ = 0,8. Was gibt es aus (0 oder 1)?", a: 0, s: "z = 0,7 ist kleiner als θ = 0,8, also out = 0." },
     { t: "num", g: "Summe und Ausgabe", k: true, q: "Drei Eingänge: x = (1, 0, 1), Gewichte w = (0,5; −0,2; 0,3). Wie groß ist z?", a: 0.8, s: "z = 0,5·1 + (−0,2)·0 + 0,3·1 = 0,8. Der mittlere Eingang ist 0 und zählt deshalb nicht." },
     { t: "num", g: "Summe und Ausgabe", q: "x₁ = 2, x₂ = −1, w₁ = 0,5, w₂ = 1,5. Wie groß ist z?", a: -0.5, s: "z = 0,5·2 + 1,5·(−1) = 1 − 1,5 = −0,5" },
-    { t: "num", g: "Summe und Ausgabe", q: "Gleiches Perzeptron mit θ = 0. Ausgabe y?", a: 0, s: "z = −0,5 < 0, also y = 0." },
-    { t: "num", g: "Summe und Ausgabe", k: true, q: "x₁ = 1, x₂ = 0, w₁ = 0,6, w₂ = 0,4, θ = 0,6. Ausgabe y?", a: 1, s: "z = 0,6. Weil z ≥ θ gilt (gleich zählt mit), ist y = 1." },
+    { t: "num", g: "Summe und Ausgabe", q: "Gleiches Perzeptron mit θ = 0. Ausgabe out?", a: 0, s: "z = −0,5 < 0, also out = 0." },
+    { t: "num", g: "Summe und Ausgabe", k: true, q: "x₁ = 1, x₂ = 0, w₁ = 0,6, w₂ = 0,4, θ = 0,6. Ausgabe out?", a: 1, s: "z = 0,6. Weil z ≥ θ gilt (gleich zählt mit), ist out = 1." },
     { t: "mc", g: "UND und ODER", k: true, q: "Welches Perzeptron mit zwei Eingängen (0 oder 1) berechnet UND?", o: ["w₁ = w₂ = 1, θ = 1,5", "w₁ = w₂ = 1, θ = 0,5", "w₁ = w₂ = 1, θ = 3", "w₁ = 1, w₂ = 0, θ = 1"], a: 0, s: "Nur bei (1, 1) ist z = 2 ≥ 1,5. Bei (1, 0) und (0, 1) ist z = 1 < 1,5. Genau das ist UND." },
     { t: "mc", g: "UND und ODER", k: true, q: "Welches Perzeptron berechnet ODER?", o: ["w₁ = w₂ = 1, θ = 0,5", "w₁ = w₂ = 1, θ = 1,5", "w₁ = w₂ = 1, θ = 2,5", "w₁ = w₂ = −1, θ = 0"], a: 0, s: "Schon ein Eingang mit 1 gibt z = 1 ≥ 0,5. Nur bei (0, 0) ist z = 0 < 0,5. Das ist ODER." },
     { t: "num", g: "UND und ODER", q: "Gewichte w₁ = 3 und w₂ = 2. Welcher ist der größte ganzzahlige Schwellwert θ, mit dem das Perzeptron UND berechnet?", a: 5, s: "z(1,0) = 3, z(0,1) = 2, z(1,1) = 5. Für UND muss nur (1,1) durchkommen: 3 < θ ≤ 5. Größte ganze Zahl: θ = 5." },
@@ -162,32 +162,32 @@ export const INF_DAYS: Day[] = [
    goal: "Du kannst einen Lernschritt der Perzeptron-Lernregel komplett durchrechnen und erklären, wann das Lernen aufhört.",
    blocks: [
     ["20", "skript", "<b>Idee.</b> Lernen heißt: Gewichte so verschieben, dass der Fehler kleiner wird."],
-    ["30", "skript", "<b>Die Lernregel.</b> Δwᵢ = α·(y − ŷ)·xᵢ. Rechne das vorgerechnete Beispiel aus der Erklärung Zeile für Zeile nach."],
+    ["30", "skript", "<b>Die Lernregel.</b> Δwᵢ = α·(t − out)·xᵢ. Rechne das vorgerechnete Beispiel aus der Erklärung Zeile für Zeile nach."],
     ["15", "skript", "<b>Lernrate und Epochen.</b> Was passiert bei großer und kleiner Lernrate, und wann ist Schluss?"],
     ["35", "ueben", "<b>Übungen</b> unten. Den kompletten Lernschritt (Übung 4.5 bis 4.8) unbedingt ohne Lösung schaffen."],
     ["10", "test", "<b>Selbsttest.</b> Algorithmus auf ein leeres Blatt schreiben: Startwerte, Schleife, Fehler, Update, Abbruch."]
    ],
-   notes: [["warn", "Reihenfolge", "Erst ŷ mit den <b>alten</b> Gewichten ausrechnen, dann alle Gewichte gleichzeitig ändern. Nicht w₁ ändern und mit dem neuen w₁ weiterrechnen."]],
+   notes: [["warn", "Reihenfolge", "Erst out mit den <b>alten</b> Gewichten ausrechnen, dann alle Gewichte gleichzeitig ändern. Nicht w₁ ändern und mit dem neuen w₁ weiterrechnen."]],
    vids: [], links: [["Formeln", "#formeln"]],
-   checks: ["Den Fehler e = y − ŷ bestimmen", "Δwᵢ und die neuen Gewichte für einen Lernschritt ausrechnen", "Den Lernalgorithmus mit Startwerten, Schleife und Abbruch aufschreiben", "Erklären, was die Lernrate bewirkt", "Erklären, warum das Lernen bei XOR nie endet"],
+   checks: ["Den error = t − out bestimmen", "Δwᵢ und die neuen Gewichte für einen Lernschritt ausrechnen", "Den Lernalgorithmus mit Startwerten, Schleife und Abbruch aufschreiben", "Erklären, was die Lernrate bewirkt", "Erklären, warum das Lernen bei XOR nie endet"],
    groups: ["Fehler und Änderung", "Ein ganzer Lernschritt", "Verstehen"],
    core: { b: [0, 1, 3, 4], c: [0, 1, 2] },
    ex: [
-    { t: "num", g: "Fehler und Änderung", k: true, q: "Die richtige Antwort ist y = 1, das Perzeptron gibt ŷ = 0 aus. Wie groß ist der Fehler e = y − ŷ?", a: 1, s: "e = 1 − 0 = 1. Das Perzeptron war zu „vorsichtig“, die Gewichte müssen größer werden." },
-    { t: "num", g: "Fehler und Änderung", k: true, q: "Lernrate α = 0,1, Fehler e = 1, Eingabe x₁ = 0,5. Wie groß ist Δw₁?", a: 0.05, s: "Δw₁ = α·e·x₁ = 0,1 · 1 · 0,5 = 0,05" },
-    { t: "num", g: "Fehler und Änderung", k: true, q: "Vorher war w₁ = 0,3. Wie groß ist w₁ nach dem Update mit Δw₁ = 0,05?", a: 0.35, s: "w₁ := w₁ + Δw₁ = 0,3 + 0,05 = 0,35" },
-    { t: "num", g: "Fehler und Änderung", q: "α = 0,1 und e = 1. Wie groß ist die Änderung des Biasgewichts Δw₀?", a: 0.1, s: "Der Bias-Eingang ist immer 1, also Δw₀ = α·e·1 = 0,1." },
-    { t: "num", g: "Ein ganzer Lernschritt", k: true, q: "w₀ = 0,2, w₁ = −0,4, w₂ = 0,1, Eingabe (1, 1), richtige Antwort y = 1, α = 0,2. Was gibt das Perzeptron vor dem Lernen aus (ŷ)?", a: 0, s: "z = 0,2 − 0,4 + 0,1 = −0,1 < 0, also ŷ = 0. Das ist falsch, denn y = 1." },
-    { t: "num", g: "Ein ganzer Lernschritt", k: true, q: "Gleiche Situation. Wie groß ist das neue w₁?", a: -0.2, s: "e = 1 − 0 = 1. Δw₁ = 0,2 · 1 · 1 = 0,2. Neues w₁ = −0,4 + 0,2 = −0,2." },
+    { t: "num", g: "Fehler und Änderung", k: true, q: "Die richtige Antwort (Zielwert) ist t = 1, das Perzeptron gibt out = 0 aus. Wie groß ist der error = t − out?", a: 1, s: "error = 1 − 0 = 1. Das Perzeptron war zu „vorsichtig“, die Gewichte müssen größer werden." },
+    { t: "num", g: "Fehler und Änderung", k: true, q: "Lernrate α = 0,1, error = 1, Eingabe x₁ = 0,5. Wie groß ist Δw₁?", a: 0.05, s: "Δw₁ = α·error·x₁ = 0,1 · 1 · 0,5 = 0,05" },
+    { t: "num", g: "Fehler und Änderung", k: true, q: "Vorher war w₁ = 0,3. Wie groß ist w₁ nach dem Update mit Δw₁ = 0,05?", a: 0.35, s: "w₁ ← w₁ + Δw₁ = 0,3 + 0,05 = 0,35" },
+    { t: "num", g: "Fehler und Änderung", q: "α = 0,1 und error = 1. Wie groß ist die Änderung des Biasgewichts Δw₀?", a: 0.1, s: "Der Bias-Eingang ist immer 1, also Δw₀ = α·error·1 = 0,1." },
+    { t: "num", g: "Ein ganzer Lernschritt", k: true, q: "w₀ = 0,2, w₁ = −0,4, w₂ = 0,1, Eingabe (1, 1), Zielwert t = 1, α = 0,2. Was gibt das Perzeptron vor dem Lernen aus (out)?", a: 0, s: "z = 0,2 − 0,4 + 0,1 = −0,1 < 0, also out = 0. Das ist falsch, denn t = 1." },
+    { t: "num", g: "Ein ganzer Lernschritt", k: true, q: "Gleiche Situation. Wie groß ist das neue w₁?", a: -0.2, s: "error = 1 − 0 = 1. Δw₁ = 0,2 · 1 · 1 = 0,2. Neues w₁ = −0,4 + 0,2 = −0,2." },
     { t: "num", g: "Ein ganzer Lernschritt", k: true, q: "Gleiche Situation. Wie groß ist das neue w₀?", a: 0.4, s: "Δw₀ = 0,2 · 1 = 0,2. Neues w₀ = 0,2 + 0,2 = 0,4." },
     { t: "num", g: "Ein ganzer Lernschritt", q: "Gleiche Situation. Wie groß ist das neue w₂?", a: 0.3, s: "Δw₂ = 0,2 · 1 · 1 = 0,2. Neues w₂ = 0,1 + 0,2 = 0,3. Probe: z = 0,4 − 0,2 + 0,3 = 0,5, jetzt kommt 1 heraus." },
-    { t: "num", g: "Ein ganzer Lernschritt", k: true, q: "y = 0, ŷ = 1, α = 0,5, x₂ = 1, altes w₂ = 0,8. Wie groß ist das neue w₂?", a: 0.3, s: "e = 0 − 1 = −1. Δw₂ = 0,5 · (−1) · 1 = −0,5. Neues w₂ = 0,8 − 0,5 = 0,3." },
-    { t: "num", g: "Ein ganzer Lernschritt", q: "y = 0, ŷ = 1, α = 0,5, aber x₁ = 0 und altes w₁ = 0,6. Wie groß ist das neue w₁?", a: 0.6, s: "Δw₁ = 0,5 · (−1) · 0 = 0. Ein Eingang, der 0 war, hat nichts zum Fehler beigetragen, deshalb bleibt w₁ = 0,6." },
-    { t: "mc", g: "Verstehen", k: true, q: "Was passiert, wenn das Perzeptron schon richtig liegt (ŷ = y)?", o: ["Die Gewichte bleiben gleich", "Alle Gewichte werden auf 0 gesetzt", "Die Lernrate wird größer", "Die Gewichte werden verdoppelt"], a: 0, s: "Dann ist y − ŷ = 0 und damit jede Änderung Δwᵢ = 0." },
+    { t: "num", g: "Ein ganzer Lernschritt", k: true, q: "t = 0, out = 1, α = 0,5, x₂ = 1, altes w₂ = 0,8. Wie groß ist das neue w₂?", a: 0.3, s: "error = 0 − 1 = −1. Δw₂ = 0,5 · (−1) · 1 = −0,5. Neues w₂ = 0,8 − 0,5 = 0,3." },
+    { t: "num", g: "Ein ganzer Lernschritt", q: "t = 0, out = 1, α = 0,5, aber x₁ = 0 und altes w₁ = 0,6. Wie groß ist das neue w₁?", a: 0.6, s: "Δw₁ = 0,5 · (−1) · 0 = 0. Ein Eingang, der 0 war, hat nichts zum Fehler beigetragen, deshalb bleibt w₁ = 0,6." },
+    { t: "mc", g: "Verstehen", k: true, q: "Was passiert, wenn das Perzeptron schon richtig liegt (out = t)?", o: ["Die Gewichte bleiben gleich", "Alle Gewichte werden auf 0 gesetzt", "Die Lernrate wird größer", "Die Gewichte werden verdoppelt"], a: 0, s: "Dann ist t − out = 0 und damit jede Änderung Δwᵢ = 0." },
     { t: "mc", g: "Verstehen", q: "Was passiert bei einer sehr großen Lernrate α?", o: ["Die Gewichte springen stark hin und her, das Lernen wird unruhig", "Das Netz lernt immer schneller und besser", "Die Ausgabe wird größer als 1", "Nichts, α ist egal"], a: 0, s: "Große Schritte schießen leicht über das Ziel hinaus. Kleine Schritte sind sicherer, brauchen aber mehr Epochen." },
     { t: "mc", g: "Verstehen", k: true, q: "Wann hört der Lernalgorithmus des Perzeptrons auf?", o: ["Wenn in einer ganzen Epoche kein Fehler mehr passiert", "Nach genau einem Beispiel", "Wenn alle Gewichte positiv sind", "Wenn die Lernrate 0 ist"], a: 0, s: "Eine Epoche ist ein Durchgang durch alle Trainingsdaten. Gibt es darin keinen Fehler mehr, ändert sich nichts mehr und man kann aufhören." },
     { t: "mc", g: "Verstehen", q: "Man trainiert ein einzelnes Perzeptron mit den XOR-Daten. Was passiert?", o: ["Es hört nie auf, weil immer mindestens ein Punkt falsch bleibt", "Es lernt XOR nach einigen Epochen", "Es lernt XOR sofort", "Es stürzt ab"], a: 0, s: "XOR ist nicht linear separierbar. Es gibt keine Gewichte, die alle vier Punkte richtig machen, deshalb kommt die Schleife nie zur Ruhe." },
-    { t: "rev", g: "Verstehen", k: true, q: "Schreibe den Lernalgorithmus des Perzeptrons in Stichpunkten auf.", s: "1. Alle Gewichte auf einen Startwert setzen, z. B. wᵢ := 0. 2. Für jedes Trainingsbeispiel (x, y): ŷ = H(w₀ + w₁x₁ + … + wₙxₙ) berechnen, Fehler e = y − ŷ, Δwᵢ = α·e·xᵢ und Δw₀ = α·e, dann wᵢ := wᵢ + Δwᵢ. 3. Schritt 2 wiederholen, bis eine ganze Epoche ohne Fehler durchläuft." }
+    { t: "rev", g: "Verstehen", k: true, q: "Schreibe den Lernalgorithmus des Perzeptrons in Stichpunkten auf.", s: "1. Alle Gewichte auf einen Startwert setzen, z. B. wᵢ ← 0. 2. Für jedes Trainingsbeispiel (x, t): out = H(w₀ + w₁x₁ + … + wₙxₙ) berechnen, error = t − out, Δwᵢ = α·error·xᵢ und Δw₀ = α·error, dann wᵢ ← wᵢ + Δwᵢ. 3. Schritt 2 wiederholen, bis eine ganze Epoche ohne Fehler durchläuft." }
    ] },
  { n: 5, date: "", wd: "", title: "Mehrschichtige Netze", short: "ReLU, Sigmoid, Softmax",
    goal: "Du kannst ReLU, Sigmoid und Softmax ausrechnen und ein mehrschichtiges Netz Schritt für Schritt von den Eingaben bis zur Ausgabe durchrechnen.",
@@ -211,14 +211,14 @@ export const INF_DAYS: Day[] = [
     { t: "num", g: "Aktivierungsfunktionen", k: true, q: "Wie groß ist σ(1)? (auf drei Nachkommastellen)", a: 0.731, s: "e⁻¹ ≈ 0,368. σ(1) = 1/(1 + 0,368) = 1/1,368 ≈ 0,731" },
     { t: "num", g: "Aktivierungsfunktionen", q: "Wie groß ist σ(−2)? (auf drei Nachkommastellen)", a: 0.119, s: "e² ≈ 7,389. σ(−2) = 1/(1 + 7,389) ≈ 0,119" },
     { t: "mc", g: "Aktivierungsfunktionen", q: "Zwischen welchen Werten liegt die Sigmoid-Funktion?", o: ["Zwischen 0 und 1", "Zwischen −1 und 1", "Zwischen 0 und unendlich", "Sie ist nur 0 oder 1"], a: 0, s: "σ(z) nähert sich für große z der 1 und für sehr negative z der 0, erreicht beides aber nie. Im Gegensatz zu Heaviside gibt sie Zwischenwerte." },
-    { t: "num", g: "Softmax", k: true, q: "Zwei Ausgabeneuronen mit z₁ = 1 und z₂ = 3. Wie groß ist die Softmax-Aktivierung des zweiten Neurons? (zwei Nachkommastellen)", a: 0.88, s: "e¹ ≈ 2,718, e³ ≈ 20,086, Summe 22,804. softmax(z₂) = 20,086/22,804 ≈ 0,88" },
+    { t: "num", g: "Softmax", k: true, q: "Zwei Ausgabeneuronen mit z₁ = 1 und z₂ = 3. Wie groß ist die Softmax-Aktivierung des zweiten Neurons? (zwei Nachkommastellen)", a: 0.88, s: "e¹ ≈ 2,718, e³ ≈ 20,086, Summe 22,804. Softmax(z₂) = 20,086/22,804 ≈ 0,88" },
     { t: "num", g: "Softmax", q: "Gleiche Werte. Wie groß ist die Softmax-Aktivierung des ersten Neurons?", a: 0.12, s: "2,718/22,804 ≈ 0,12. Probe: 0,12 + 0,88 = 1." },
     { t: "num", g: "Softmax", k: true, q: "Drei Neuronen haben alle z = 0. Wie groß ist die Softmax-Aktivierung von jedem?", a: 0.3333, s: "e⁰ = 1 für alle, Summe 3. Jedes bekommt 1/3 ≈ 0,33." },
     { t: "mc", g: "Softmax", k: true, q: "Was gilt immer für die Softmax-Werte einer Schicht?", o: ["Sie ergeben zusammen 1", "Sie sind alle gleich", "Sie sind alle größer als 1", "Der größte ist immer 1"], a: 0, s: "Jeder Wert wird durch die Summe aller e-Werte geteilt. Deshalb ist die Summe genau 1, und man kann die Werte als Wahrscheinlichkeiten lesen." },
     { t: "num", g: "Netz durchrechnen", k: true, q: "Eingaben x₁ = 1, x₂ = 0,5. Verdecktes Neuron h₁: Bias 0,2, Gewichte 0,4 (von x₁) und −0,6 (von x₂), Aktivierung ReLU. Wie groß ist z von h₁?", a: 0.3, s: "z = 0,2 + 0,4·1 + (−0,6)·0,5 = 0,2 + 0,4 − 0,3 = 0,3" },
     { t: "num", g: "Netz durchrechnen", q: "Verdecktes Neuron h₂: Bias −0,5, Gewichte 0,3 und 0,8, ReLU. Gleiche Eingaben. Wie groß ist die Aktivierung von h₂?", a: 0.2, s: "z = −0,5 + 0,3·1 + 0,8·0,5 = 0,2. ReLU(0,2) = 0,2." },
     { t: "num", g: "Netz durchrechnen", k: true, q: "Ausgabeneuron: Bias 0,1, Gewicht 1,0 von h₁ und −0,5 von h₂. Mit a(h₁) = 0,3 und a(h₂) = 0,2: Wie groß ist z am Ausgang?", a: 0.3, s: "z = 0,1 + 1,0·0,3 + (−0,5)·0,2 = 0,1 + 0,3 − 0,1 = 0,3" },
-    { t: "num", g: "Netz durchrechnen", k: true, q: "Der Ausgang benutzt Sigmoid. Wie groß ist die Ausgabe ŷ = σ(0,3)? (drei Nachkommastellen)", a: 0.574, s: "e⁻⁰·³ ≈ 0,741. σ(0,3) = 1/1,741 ≈ 0,574" },
+    { t: "num", g: "Netz durchrechnen", k: true, q: "Der Ausgang benutzt Sigmoid. Wie groß ist die Ausgabe out = σ(0,3)? (drei Nachkommastellen)", a: 0.574, s: "e⁻⁰·³ ≈ 0,741. σ(0,3) = 1/1,741 ≈ 0,574" },
     { t: "mc", g: "Verstehen", k: true, q: "Ein Netz soll Bilder in drei Klassen einordnen (Hund, Katze, Vogel). Welche Aktivierung nimmt man am Ausgang?", o: ["Softmax", "ReLU", "Heaviside", "Gar keine"], a: 0, s: "Softmax macht aus den drei Ausgängen Wahrscheinlichkeiten, die zusammen 1 ergeben. Die größte ist die erkannte Klasse." },
     { t: "mc", g: "Verstehen", q: "Kann ein Netz mit einer verdeckten Schicht XOR lösen?", o: ["Ja, die verdeckte Schicht kombiniert zwei Trenngeraden", "Nein, XOR geht nie", "Nur mit Softmax", "Nur wenn alle Gewichte 1 sind"], a: 0, s: "Zum Beispiel h₁ = ODER, h₂ = UND und am Ausgang „h₁ und nicht h₂“. Das ist genau XOR." },
     { t: "rev", g: "Verstehen", q: "Nimm Stellung: „Sobald ein neuronales Netz eine verdeckte Schicht hat, kann es automatisch jedes Klassifikationsproblem fehlerfrei lösen.“", s: "Die Aussage ist falsch. Eine verdeckte Schicht macht nicht-lineare Trennungen wie XOR möglich. Ob das Netz ein Problem wirklich löst, hängt aber von genug Neuronen, guten Trainingsdaten und erfolgreichem Training ab. Außerdem kann es die Trainingsdaten auswendig lernen und bei neuen Daten Fehler machen. „Automatisch“ und „fehlerfrei“ stimmen also nicht." },
@@ -247,12 +247,12 @@ export const INF_DAYS: Day[] = [
     { t: "num", g: "Code lesen", k: true, q: "Was gibt berechneNettoinput([1, 2], [0,5; −0,25], 0,1) zurück? (inputs, gewichte, bias)", a: 0.1, s: "Summe = 1·0,5 + 2·(−0,25) = 0,5 − 0,5 = 0. Dazu der Bias: 0 + 0,1 = 0,1." },
     { t: "num", g: "Code lesen", q: "Was gibt vorhersageReLU(2, 1, −1, 0,5, −1) zurück? (input1, input2, w0, w1, w2)", a: 0, s: "z = −1 + 0,5·2 + (−1)·1 = −1. ReLU(−1) = 0." },
     { t: "num", g: "Code lesen", q: "softmaxAlle([0, 0]) gibt eine Liste zurück. Wie groß ist der erste Wert?", a: 0.5, s: "e⁰ = 1 für beide, Summe 2. Jeder Wert ist 1/2 = 0,5." },
-    { t: "mc", g: "Code lesen", k: true, q: "In einer Lösung steht für die Heaviside-Funktion „WENN z > 0 DANN RÜCKGABE 1“. Was ist falsch?", o: ["Bei z = 0 muss auch 1 herauskommen, also z >= 0", "Nichts, das stimmt", "Es muss z < 0 heißen", "Die Rückgabe muss 0 sein"], a: 0, s: "H(z) = 1 für z ≥ 0. Mit > würde z = 0 fälschlich 0 ergeben." },
+    { t: "mc", g: "Code lesen", k: true, q: "In einer Lösung steht für die Heaviside-Funktion „WENN z > 0 … RÜCKGABE 1“. Was ist falsch?", o: ["Bei z = 0 muss auch 1 herauskommen, also z >= 0", "Nichts, das stimmt", "Es muss z < 0 heißen", "Die Rückgabe muss 0 sein"], a: 0, s: "H(z) = 1 für z ≥ 0. Mit > würde z = 0 fälschlich 0 ergeben." },
     { t: "mc", g: "Code lesen", q: "Was berechnet die erste Schleife in softmaxAlle?", o: ["Die Summe aller e^z", "Den größten Wert", "Die Summe aller z", "Die Länge der Liste"], a: 0, s: "Für den Nenner von Softmax braucht man Σ e^(zᵢ). Erst danach kann jeder Wert durch diese Summe geteilt werden." },
-    { t: "rev", g: "Code schreiben", k: true, q: "Schreibe die Operation vorhersage(input1: FKZ, input2: FKZ, w0: FKZ, w1: FKZ, w2: FKZ): GZ, die die Ausgabe eines Perzeptrons mit Heaviside-Funktion berechnet.", s: CODE("OPERATION vorhersage(input1: FKZ, input2: FKZ, w0: FKZ, w1: FKZ, w2: FKZ): GZ\n  z := w0 + w1 * input1 + w2 * input2\n  WENN z >= 0 DANN\n    RÜCKGABE 1\n  SONST\n    RÜCKGABE 0\n  ENDE WENN\nENDE OPERATION") },
-    { t: "rev", g: "Code schreiben", k: true, q: "Schreibe berechneNettoinput(inputs: Liste<FKZ>, gewichte: Liste<FKZ>, bias: FKZ): FKZ, die das Skalarprodukt berechnet und den Bias addiert.", s: CODE("OPERATION berechneNettoinput(inputs: Liste<FKZ>, gewichte: Liste<FKZ>, bias: FKZ): FKZ\n  summe := 0\n  FÜR i := 0 BIS länge(inputs) - 1\n    summe := summe + inputs[i] * gewichte[i]\n  ENDE FÜR\n  RÜCKGABE summe + bias\nENDE OPERATION") },
-    { t: "rev", g: "Code schreiben", q: "Schreibe vorhersageReLU(input1: FKZ, input2: FKZ, w0: FKZ, w1: FKZ, w2: FKZ): FKZ.", s: CODE("OPERATION vorhersageReLU(input1: FKZ, input2: FKZ, w0: FKZ, w1: FKZ, w2: FKZ): FKZ\n  z := w0 + w1 * input1 + w2 * input2\n  WENN z > 0 DANN\n    RÜCKGABE z\n  SONST\n    RÜCKGABE 0\n  ENDE WENN\nENDE OPERATION") + "<p>Kürzer geht auch RÜCKGABE max(0, z).</p>" },
-    { t: "rev", g: "Code schreiben", k: true, q: "Schreibe softmaxAlle(werte: Liste<FKZ>): Liste<FKZ>. Beispiel: softmaxAlle([−2; 1,3; 0; −1; 0,4]) = [0,02; 0,551; 0,15; 0,055; 0,224].", s: CODE("OPERATION softmaxAlle(werte: Liste<FKZ>): Liste<FKZ>\n  summe := 0\n  FÜR JEDES z IN werte\n    summe := summe + exp(z)\n  ENDE FÜR\n  ergebnis := neue Liste<FKZ>\n  FÜR JEDES z IN werte\n    ergebnis.hinzufügen(exp(z) / summe)\n  ENDE FÜR\n  RÜCKGABE ergebnis\nENDE OPERATION") }
+    { t: "rev", g: "Code schreiben", k: true, q: "Schreibe die Operation vorhersage(input1: FKZ, input2: FKZ, w0: FKZ, w1: FKZ, w2: FKZ): GZ, die die Ausgabe eines Perzeptrons mit Heaviside-Funktion berechnet.", s: CODE("OPERATION vorhersage(input1: FKZ, input2: FKZ, w0: FKZ, w1: FKZ, w2: FKZ): GZ\n  z ← w0 + w1 * input1 + w2 * input2\n  WENN z >= 0\n    RÜCKGABE 1\n  SONST\n    RÜCKGABE 0\n  ENDE WENN") },
+    { t: "rev", g: "Code schreiben", k: true, q: "Schreibe berechneNettoinput(inputs: Liste&lt;FKZ&gt;, gewichte: Liste&lt;FKZ&gt;, bias: FKZ): FKZ, die das Skalarprodukt berechnet und den Bias addiert.", s: CODE("OPERATION berechneNettoinput(inputs: Liste&lt;FKZ&gt;, gewichte: Liste&lt;FKZ&gt;, bias: FKZ): FKZ\n  summe ← 0\n  FÜR i ← 0 BIS inputs.anzahlElemente() - 1 SCHRITT 1\n    summe ← summe + inputs[i] * gewichte[i]\n  ENDE FÜR\n  RÜCKGABE summe + bias") },
+    { t: "rev", g: "Code schreiben", q: "Schreibe vorhersageReLU(input1: FKZ, input2: FKZ, w0: FKZ, w1: FKZ, w2: FKZ): FKZ.", s: CODE("OPERATION vorhersageReLU(input1: FKZ, input2: FKZ, w0: FKZ, w1: FKZ, w2: FKZ): FKZ\n  z ← w0 + w1 * input1 + w2 * input2\n  WENN z > 0\n    RÜCKGABE z\n  SONST\n    RÜCKGABE 0\n  ENDE WENN") + "<p>Kürzer geht auch RÜCKGABE max(0, z).</p>" },
+    { t: "rev", g: "Code schreiben", k: true, q: "Schreibe softmaxAlle(werte: Liste&lt;FKZ&gt;): Liste&lt;FKZ&gt;. Beispiel: softmaxAlle([−2; 1,3; 0; −1; 0,4]) = [0,02; 0,551; 0,15; 0,055; 0,224].", s: CODE("OPERATION softmaxAlle(werte: Liste&lt;FKZ&gt;): Liste&lt;FKZ&gt;\n  summe ← 0\n  FÜR z IN werte\n    summe ← summe + exp(z)\n  ENDE FÜR\n  ergebnis ← NEU Liste&lt;FKZ&gt;()\n  FÜR z IN werte\n    ergebnis.anhaengen(exp(z) / summe)\n  ENDE FÜR\n  RÜCKGABE ergebnis") }
    ] }
 ];
 
@@ -289,8 +289,8 @@ export const INF_LESSONS: Record<number, Lesson[]> = {
    TAB(["Teil", "Zeichen", "Bedeutung"], [["Eingaben", "x₁, x₂, …", "die Informationen, meist 0 oder 1"], ["Gewichte", "w₁, w₂, …", "wie wichtig jede Eingabe ist"], ["Nettoinput", "z", "die gewichtete Summe"], ["Schwellwert", "θ", "ab hier sagt das Perzeptron Ja"], ["Ausgabe", "y", "1 oder 0"]]) +
    LK("Gewichte machen eine Eingabe wichtig oder unwichtig, der Schwellwert entscheidet, ab wann es Ja heißt.") },
   { t: "Rechnen in drei Schritten", g: "Summe und Ausgabe", k: true, h:
-   "<ol><li><b>Malnehmen:</b> jede Eingabe mit ihrem Gewicht.</li><li><b>Zusammenzählen:</b> " + M("z = w₁·x₁ + w₂·x₂") + "</li><li><b>Vergleichen:</b> Ist " + M("z ≥ θ") + ", dann " + M("y = 1") + ", sonst " + M("y = 0") + ".</li></ol>" +
-   LX("<p>x₁ = 1, x₂ = 0, w₁ = 0,6, w₂ = 0,4, θ = 0,5</p><p>z = 0,6·1 + 0,4·0 = 0,6. Weil 0,6 ≥ 0,5, ist y = 1.</p>") +
+   "<ol><li><b>Malnehmen:</b> jede Eingabe mit ihrem Gewicht.</li><li><b>Zusammenzählen:</b> " + M("z = w₁·x₁ + w₂·x₂") + "</li><li><b>Vergleichen:</b> Ist " + M("z ≥ θ") + ", dann " + M("out = 1") + ", sonst " + M("out = 0") + ".</li></ol>" +
+   LX("<p>x₁ = 1, x₂ = 0, w₁ = 0,6, w₂ = 0,4, θ = 0,5</p><p>z = 0,6·1 + 0,4·0 = 0,6. Weil 0,6 ≥ 0,5, ist out = 1.</p>") +
    LK("„Größer oder gleich“: Bei z = θ kommt 1 heraus.") },
   { t: "UND und ODER als Perzeptron", g: "UND und ODER", k: true, h:
    "<p>Mit w₁ = w₂ = 1 ist z einfach die Anzahl der Einsen. Der Schwellwert entscheidet, wie viele Einsen nötig sind.</p>" +
@@ -309,13 +309,13 @@ export const INF_LESSONS: Record<number, Lesson[]> = {
   { t: "Vom Schwellwert zum Bias", g: "Bias", k: true, h:
    "<p>Statt mit θ zu vergleichen, bringt man θ auf die andere Seite: " + M("z ≥ θ") + " ist dasselbe wie " + M("z − θ ≥ 0") + ".</p>" +
    "<p>Das −θ wird als eigenes Gewicht <b>w₀</b> geschrieben, und es bekommt einen Eingang, der <b>immer 1</b> ist. Dieses w₀ heißt <b>Bias</b>.</p>" + svgPerceptron(true) +
-   LF("z = w₀·1 + w₁·x₁ + w₂·x₂ &nbsp;&nbsp; y = H(z)") +
+   LF("z = w₀·x₀ + w₁·x₁ + w₂·x₂ mit x₀ = 1 &nbsp;&nbsp; out = H(z) &nbsp;&nbsp; w₀ = b = −θ <span class='fsref'>Formelsammlung S. 28</span>") +
    "<p>Die <b>Heaviside-Funktion</b> H macht daraus 0 oder 1: " + M("H(z) = 1") + " für " + M("z ≥ 0") + ", sonst 0.</p>" +
-   LX("<p>θ = 1,5 wird zu w₀ = −1,5. Mit w₁ = w₂ = 1 und Eingabe (1, 1): z = −1,5 + 1 + 1 = 0,5 ≥ 0, also y = 1. Das ist wieder UND.</p>") +
+   LX("<p>θ = 1,5 wird zu w₀ = −1,5. Mit w₁ = w₂ = 1 und Eingabe (1, 1): z = −1,5 + 1 + 1 = 0,5 ≥ 0, also out = 1. Das ist wieder UND.</p>") +
    LK("w₀ = −θ. Der Bias-Eingang ist immer 1.") },
   { t: "Die Trenngerade", g: "Trenngerade", k: true, h:
    "<p>Bei zwei Eingängen kann man jede Eingabe als Punkt (x | y) zeichnen. Die Grenze zwischen Ja und Nein liegt genau dort, wo <b>z = 0</b> ist.</p>" +
-   LF("w₀ + w₁·x + w₂·y = 0 &nbsp; ⇒ &nbsp; y = −(w₁/w₂)·x − w₀/w₂") +
+   LF("w₀ + w₁·x + w₂·y = 0 &nbsp; ⇒ &nbsp; y = −(w₁/w₂)·x − w₀/w₂ <span class='fsref'>Nicht in der Formelsammlung, aus z = 0 selbst herleiten. Hier sind x und y die Koordinaten des Punkts.</span>") +
    LX("<p>w₀ = −3, w₁ = 1, w₂ = 2</p><ol><li>z = 0 setzen: −3 + x + 2y = 0</li><li>2y allein: 2y = −x + 3</li><li>durch 2: y = −0,5x + 1,5</li></ol><p>Also m = −0,5 und b = 1,5.</p>") + svgLine() +
    LK("m = −w₁/w₂ und b = −w₀/w₂. Beide mit Minus.") },
   { t: "Welche Seite ist Klasse 1?", g: "Trenngerade", h:
@@ -336,16 +336,16 @@ export const INF_LESSONS: Record<number, Lesson[]> = {
  ],
  4: [
   { t: "Lernen heißt Gewichte verschieben", g: "Fehler und Änderung", k: true, h:
-   "<p>Am Anfang sind die Gewichte zufällig oder 0. Das Perzeptron rät also. Beim Lernen bekommt es Beispiele mit der richtigen Antwort y und vergleicht sie mit seiner eigenen Ausgabe <b>ŷ</b> (sprich „y Dach“).</p>" +
-   TAB(["Fall", "Fehler e = y − ŷ", "Was passiert"], [["richtig", "0", "nichts"], ["y = 1, ŷ = 0", "+1", "Gewichte der aktiven Eingänge werden größer"], ["y = 0, ŷ = 1", "−1", "Gewichte der aktiven Eingänge werden kleiner"]]) +
+   "<p>Am Anfang sind die Gewichte zufällig oder 0. Das Perzeptron rät also. Beim Lernen bekommt es Beispiele mit der richtigen Antwort y und vergleicht sie mit seiner eigenen Ausgabe <b>out</b>.</p>" +
+   TAB(["Fall", "error = t − out", "Was passiert"], [["richtig", "0", "nichts"], ["t = 1, out = 0", "+1", "Gewichte der aktiven Eingänge werden größer"], ["t = 0, out = 1", "−1", "Gewichte der aktiven Eingänge werden kleiner"]]) +
    LK("Nur bei Fehlern wird etwas geändert, und nur bei Eingängen, die nicht 0 waren.") },
   { t: "Die Lernregel", g: "Fehler und Änderung", k: true, h:
-   LF("Δwᵢ = α·(y − ŷ)·xᵢ &nbsp;&nbsp; Δw₀ = α·(y − ŷ) &nbsp;&nbsp; wᵢ := wᵢ + Δwᵢ") +
+   LF("error = t − out &nbsp;&nbsp; wₖ ← wₖ + α · error · xₖ &nbsp;&nbsp; (Bias: x₀ = 1) <span class='fsref'>Formelsammlung S. 28</span>") +
    "<p><b>α</b> ist die Lernrate, eine kleine Zahl wie 0,1. Sie bestimmt, wie groß die Schritte sind.</p>" +
-   "<p>Der ganze Algorithmus aus dem Unterricht:</p><ol><li>Alle Gewichte auf 0 setzen.</li><li>Für jedes Beispiel (x, y): ŷ ausrechnen, Δwᵢ ausrechnen, Gewichte ändern.</li><li>Schritt 2 wiederholen, bis eine ganze Runde (Epoche) ohne Fehler durchläuft.</li></ol>" },
+   "<p>Der ganze Algorithmus aus dem Unterricht:</p><ol><li>Alle Gewichte auf 0 setzen.</li><li>Für jedes Beispiel (x, t): out ausrechnen, Δwᵢ ausrechnen, Gewichte ändern.</li><li>Schritt 2 wiederholen, bis eine ganze Runde (Epoche) ohne Fehler durchläuft.</li></ol>" },
   { t: "Ein Lernschritt vorgerechnet", g: "Ein ganzer Lernschritt", k: true, h:
-   LX("<p>w₀ = 0,2, w₁ = −0,4, w₂ = 0,1, Eingabe (1, 1), richtige Antwort y = 1, α = 0,2</p><ol><li><b>Ausgabe:</b> z = 0,2 − 0,4 + 0,1 = −0,1, also ŷ = 0</li><li><b>Fehler:</b> e = 1 − 0 = 1</li><li><b>Änderungen:</b> Δw₀ = 0,2·1 = 0,2, Δw₁ = 0,2·1·1 = 0,2, Δw₂ = 0,2·1·1 = 0,2</li><li><b>Neu:</b> w₀ = 0,4, w₁ = −0,2, w₂ = 0,3</li><li><b>Probe:</b> z = 0,4 − 0,2 + 0,3 = 0,5, jetzt kommt 1 heraus</li></ol>") +
-   LK("Erst ŷ mit den alten Gewichten, dann alle Gewichte auf einmal ändern.") },
+   LX("<p>w₀ = 0,2, w₁ = −0,4, w₂ = 0,1, Eingabe (1, 1), Zielwert t = 1, α = 0,2</p><ol><li><b>Ausgabe:</b> z = 0,2 − 0,4 + 0,1 = −0,1, also out = 0</li><li><b>Fehler:</b> error = 1 − 0 = 1</li><li><b>Änderungen:</b> Δw₀ = 0,2·1 = 0,2, Δw₁ = 0,2·1·1 = 0,2, Δw₂ = 0,2·1·1 = 0,2</li><li><b>Neu:</b> w₀ = 0,4, w₁ = −0,2, w₂ = 0,3</li><li><b>Probe:</b> z = 0,4 − 0,2 + 0,3 = 0,5, jetzt kommt 1 heraus</li></ol>") +
+   LK("Erst out mit den alten Gewichten, dann alle Gewichte auf einmal ändern.") },
   { t: "Lernrate und Epochen", g: "Verstehen", h:
    "<ul><li><b>Große Lernrate:</b> große Sprünge, schnell, aber unruhig. Die Gewichte können über das Ziel schießen.</li><li><b>Kleine Lernrate:</b> kleine, sichere Schritte, braucht aber viele Epochen.</li><li><b>Epoche:</b> ein Durchgang durch alle Trainingsdaten.</li></ul>" +
    "<p>Sind die Daten linear separierbar, findet das Perzeptron sicher Gewichte ohne Fehler und hört auf. Bei XOR gibt es solche Gewichte nicht, die Schleife läuft endlos. Deshalb setzt man in der Praxis zusätzlich eine maximale Zahl an Epochen.</p>" }
@@ -353,8 +353,8 @@ export const INF_LESSONS: Record<number, Lesson[]> = {
  5: [
   { t: "Warum mehrere Schichten?", k: true, h:
    "<p>Ein Perzeptron zieht eine Gerade. Für XOR braucht man zwei Geraden. Also nimmt man mehrere Neuronen hintereinander:</p>" + svgMlp() +
-   "<ul><li><b>Eingabeschicht:</b> die x-Werte</li><li><b>Verdeckte Schicht</b> (hidden layer): rechnet Zwischenergebnisse</li><li><b>Ausgabeschicht:</b> das Ergebnis ŷ</li></ul>" +
-   "<p>Die Schreibweise aus dem Unterricht für Schicht l:</p>" + LF("a⁽¹⁾ = x &nbsp;&nbsp; z⁽ˡ⁾ = W⁽ˡ⁻¹⁾·a⁽ˡ⁻¹⁾ + b⁽ˡ⁻¹⁾ &nbsp;&nbsp; a⁽ˡ⁾ = g(z⁽ˡ⁾) &nbsp;&nbsp; ŷ = a⁽ᴸ⁾") +
+   "<ul><li><b>Eingabeschicht:</b> die x-Werte</li><li><b>Verdeckte Schicht</b> (hidden layer): rechnet Zwischenergebnisse</li><li><b>Ausgabeschicht:</b> das Ergebnis out</li></ul>" +
+   "<p>Die Schreibweise aus dem Unterricht für Schicht l:</p>" + LF("Jedes Neuron: z = Σ wᵢ · xᵢ (i = 0 bis n, x₀ = 1), dann out = Aktivierungsfunktion(z). Der out-Wert ist der Input der nächsten Schicht. <span class='fsref'>Formelsammlung S. 29</span>") +
    LK("Jedes Neuron rechnet wie ein Perzeptron: Bias plus gewichtete Summe, dann Aktivierungsfunktion.") },
   { t: "Die vier Aktivierungsfunktionen", g: "Aktivierungsfunktionen", k: true, h:
    svgAct() +
@@ -362,15 +362,15 @@ export const INF_LESSONS: Record<number, Lesson[]> = {
    LX("<p>ReLU(−2) = 0, ReLU(1,5) = 1,5. σ(0) = 0,5, σ(1) ≈ 0,731, σ(−1) ≈ 0,269.</p>") +
    LK("ReLU: negativ wird 0. Sigmoid bei 0 ist genau 0,5.") },
   { t: "Ein Netz Schritt für Schritt", g: "Netz durchrechnen", k: true, h:
-   LX("<p>Eingaben x₁ = 1, x₂ = 0,5</p><ol><li><b>h₁</b> (Bias 0,2, Gewichte 0,4 und −0,6, ReLU): z = 0,2 + 0,4 − 0,3 = 0,3, a = 0,3</li><li><b>h₂</b> (Bias −0,5, Gewichte 0,3 und 0,8, ReLU): z = −0,5 + 0,3 + 0,4 = 0,2, a = 0,2</li><li><b>Ausgang</b> (Bias 0,1, Gewichte 1,0 und −0,5, Sigmoid): z = 0,1 + 0,3 − 0,1 = 0,3</li><li>ŷ = σ(0,3) = 1/(1 + e⁻⁰·³) ≈ 0,574</li></ol>") +
+   LX("<p>Eingaben x₁ = 1, x₂ = 0,5</p><ol><li><b>h₁</b> (Bias 0,2, Gewichte 0,4 und −0,6, ReLU): z = 0,2 + 0,4 − 0,3 = 0,3, a = 0,3</li><li><b>h₂</b> (Bias −0,5, Gewichte 0,3 und 0,8, ReLU): z = −0,5 + 0,3 + 0,4 = 0,2, a = 0,2</li><li><b>Ausgang</b> (Bias 0,1, Gewichte 1,0 und −0,5, Sigmoid): z = 0,1 + 0,3 − 0,1 = 0,3</li><li>out = σ(0,3) = 1/(1 + e⁻⁰·³) ≈ 0,574</li></ol>") +
    LK("Immer Schicht für Schicht. Die Ausgaben einer Schicht sind die Eingaben der nächsten.") },
   { t: "Softmax: aus Zahlen werden Wahrscheinlichkeiten", g: "Softmax", k: true, h:
-   LF("softmax(z_k) = e^(z_k) / (e^(z₁) + e^(z₂) + … + e^(zₙ))") +
-   LX("<p>z₁ = 2, z₂ = 0</p><ol><li>e² ≈ 7,389 und e⁰ = 1</li><li>Summe: 8,389</li><li>softmax(z₁) = 7,389/8,389 ≈ 0,88, softmax(z₂) = 1/8,389 ≈ 0,12</li></ol><p>Probe: 0,88 + 0,12 = 1. Das Netz ist zu 88 % sicher, dass es Klasse 1 ist.</p>") +
+   LF("Softmax(zₖ) = e^(zₖ) / Σ e^(zᵢ) = e^(zₖ) / (e^(z₁) + e^(z₂) + … + e^(zₙ)) <span class='fsref'>Formelsammlung S. 29 und 30</span>") +
+   LX("<p>z₁ = 2, z₂ = 0</p><ol><li>e² ≈ 7,389 und e⁰ = 1</li><li>Summe: 8,389</li><li>Softmax(z₁) = 7,389/8,389 ≈ 0,88, Softmax(z₂) = 1/8,389 ≈ 0,12</li></ol><p>Probe: 0,88 + 0,12 = 1. Das Netz ist zu 88 % sicher, dass es Klasse 1 ist.</p>") +
    LK("Durch die Summe der e-Werte teilen, nicht durch die Summe der z-Werte.") },
   { t: "XOR mit zwei Schichten", g: "Verstehen", h:
    "<p>h₁ rechnet ODER (w₀ = −0,5, w₁ = w₂ = 1), h₂ rechnet UND (w₀ = −1,5, w₁ = w₂ = 1). Der Ausgang rechnet „h₁ und nicht h₂“ mit w₀ = −0,5, Gewicht 1 von h₁ und −1 von h₂, alle mit Heaviside.</p>" +
-   TAB(["x₁", "x₂", "h₁ (ODER)", "h₂ (UND)", "z am Ausgang", "ŷ"], [[0, 0, 0, 0, "−0,5", 0], [0, 1, 1, 0, "0,5", 1], [1, 0, 1, 0, "0,5", 1], [1, 1, 1, 1, "−0,5", 0]]) +
+   TAB(["x₁", "x₂", "h₁ (ODER)", "h₂ (UND)", "z am Ausgang", "out"], [[0, 0, 0, 0, "−0,5", 0], [0, 1, 1, 0, "0,5", 1], [1, 0, 1, 0, "0,5", 1], [1, 1, 1, 1, "−0,5", 0]]) +
    LK("Zwei Geraden in der verdeckten Schicht, eine Entscheidung am Ausgang: Das ist XOR.") },
   { t: "Löst eine verdeckte Schicht alles?", g: "Verstehen", h:
    "<p>Nein. Eine verdeckte Schicht macht nicht-lineare Trennungen möglich. Ob es klappt, hängt aber ab von</p><ul><li>genug Neuronen,</li><li>guten und genug Trainingsdaten,</li><li>erfolgreichem Training.</li></ul><p>Außerdem kann ein Netz die Trainingsdaten auswendig lernen und bei neuen Daten falsch liegen (Überanpassung). „Automatisch fehlerfrei“ stimmt also nicht.</p>" },
@@ -381,20 +381,20 @@ export const INF_LESSONS: Record<number, Lesson[]> = {
  ],
  6: [
   { t: "Pseudocode-Regeln", k: true, h:
-   "<p>So sieht eine Operation im Abi aus:</p>" + CODE("OPERATION name(param1: FKZ, param2: GZ): Rückgabetyp\n  variable := wert\n  WENN bedingung DANN\n    …\n  SONST\n    …\n  ENDE WENN\n  FÜR i := 0 BIS länge(liste) - 1\n    …\n  ENDE FÜR\n  RÜCKGABE ergebnis\nENDE OPERATION") +
-   TAB(["Zeichen", "Bedeutung"], [["FKZ", "Fließkommazahl (z. B. 0,5)"], ["GZ", "Ganzzahl (z. B. 1)"], ["Liste&lt;FKZ&gt;", "Liste von Kommazahlen"], [":=", "Zuweisung"], ["exp(z)", "eᶻ"]]) +
+   "<p>So sieht eine Operation im Abi aus (Formelsammlung S. 14 für WENN und FÜR, S. 15 und 16 für Listen, S. 18 für OPERATION):</p>" + CODE("OPERATION name(param1: FKZ, param2: GZ): Rückgabetyp\n  variable ← wert\n  WENN bedingung\n    …\n  SONST\n    …\n  ENDE WENN\n  FÜR i ← 0 BIS liste.anzahlElemente() - 1 SCHRITT 1\n    …\n  ENDE FÜR\n  RÜCKGABE ergebnis") +
+   TAB(["Zeichen", "Bedeutung"], [["FKZ", "Fließkommazahl (z. B. 0,5)"], ["GZ", "Ganzzahl (z. B. 1)"], ["Liste&lt;FKZ&gt;", "Liste von Kommazahlen"], ["←", "Zuweisung"], ["exp(z)", "eᶻ"]]) +
    LK("Kopfzeile zuerst: Name, Parameter mit Typ, Rückgabetyp. Dafür gibt es schon Punkte.") },
   { t: "vorhersage mit Heaviside", g: "Code schreiben", k: true, h:
-   CODE("OPERATION vorhersage(input1: FKZ, input2: FKZ, w0: FKZ, w1: FKZ, w2: FKZ): GZ\n  z := w0 + w1 * input1 + w2 * input2\n  WENN z >= 0 DANN\n    RÜCKGABE 1\n  SONST\n    RÜCKGABE 0\n  ENDE WENN\nENDE OPERATION") +
+   CODE("OPERATION vorhersage(input1: FKZ, input2: FKZ, w0: FKZ, w1: FKZ, w2: FKZ): GZ\n  z ← w0 + w1 * input1 + w2 * input2\n  WENN z >= 0\n    RÜCKGABE 1\n  SONST\n    RÜCKGABE 0\n  ENDE WENN") +
    "<p>In Python sähe das so aus:</p>" + CODE("def vorhersage(input1, input2, w0, w1, w2):\n    z = w0 + w1 * input1 + w2 * input2\n    return 1 if z >= 0 else 0") +
    LK(">= und nicht >, weil H(0) = 1 ist.") },
   { t: "berechneNettoinput mit Listen", g: "Code schreiben", k: true, h:
    "<p>Bei beliebig vielen Eingängen braucht man eine Schleife. Man nimmt immer die Eingabe und das Gewicht mit demselben Index.</p>" +
-   CODE("OPERATION berechneNettoinput(inputs: Liste<FKZ>, gewichte: Liste<FKZ>, bias: FKZ): FKZ\n  summe := 0\n  FÜR i := 0 BIS länge(inputs) - 1\n    summe := summe + inputs[i] * gewichte[i]\n  ENDE FÜR\n  RÜCKGABE summe + bias\nENDE OPERATION") +
+   CODE("OPERATION berechneNettoinput(inputs: Liste&lt;FKZ&gt;, gewichte: Liste&lt;FKZ&gt;, bias: FKZ): FKZ\n  summe ← 0\n  FÜR i ← 0 BIS inputs.anzahlElemente() - 1 SCHRITT 1\n    summe ← summe + inputs[i] * gewichte[i]\n  ENDE FÜR\n  RÜCKGABE summe + bias") +
    LX("<p>berechneNettoinput([1, 2], [0,5; −0,25], 0,1): summe = 0,5 − 0,5 = 0, Rückgabe 0 + 0,1 = 0,1.</p>") },
   { t: "softmaxAlle", g: "Code schreiben", k: true, h:
    "<p>Zwei Schleifen: In der ersten wird die Summe aller eᶻ gebildet, in der zweiten wird jeder Wert durch diese Summe geteilt.</p>" +
-   CODE("OPERATION softmaxAlle(werte: Liste<FKZ>): Liste<FKZ>\n  summe := 0\n  FÜR JEDES z IN werte\n    summe := summe + exp(z)\n  ENDE FÜR\n  ergebnis := neue Liste<FKZ>\n  FÜR JEDES z IN werte\n    ergebnis.hinzufügen(exp(z) / summe)\n  ENDE FÜR\n  RÜCKGABE ergebnis\nENDE OPERATION") +
+   CODE("OPERATION softmaxAlle(werte: Liste&lt;FKZ&gt;): Liste&lt;FKZ&gt;\n  summe ← 0\n  FÜR z IN werte\n    summe ← summe + exp(z)\n  ENDE FÜR\n  ergebnis ← NEU Liste&lt;FKZ&gt;()\n  FÜR z IN werte\n    ergebnis.anhaengen(exp(z) / summe)\n  ENDE FÜR\n  RÜCKGABE ergebnis") +
    LK("Die Summe muss fertig sein, bevor du teilst. Deshalb zwei getrennte Schleifen.") },
   { t: "Das Abi-Rezept für neuronale Netze", k: true, h:
    "<ol><li><b>Lernart:</b> nennen und mit den Daten begründen.</li><li><b>Perzeptron ausrechnen:</b> z mit Bias hinschreiben, Zahlen einsetzen, H(z) angeben.</li><li><b>Mehrschichtig:</b> erst alle verdeckten Neuronen (z und Aktivierung), dann der Ausgang. Zwischenergebnisse hinschreiben, dafür gibt es Teilpunkte.</li><li><b>Trenngerade:</b> z = 0 setzen, nach y umstellen, m und b angeben.</li><li><b>Softmax:</b> alle e-Werte, Summe, teilen, Probe mit Summe 1.</li><li><b>Stellung nehmen:</b> „Die Aussage ist falsch/richtig, weil …“ plus ein Beispiel.</li><li><b>Pseudocode:</b> Kopfzeile, Formel, Rückgabe.</li></ol>" +
@@ -408,9 +408,9 @@ export const INF_REVIEW: Record<number, Review> = {
   { t: "mc", q: "Eine KI lernt Schach, indem sie gegen sich selbst spielt und für Siege belohnt wird. Lernart?", o: ["Bestärkend", "Überwacht", "Unüberwacht", "Symbolisch"], a: 0, s: "Sie lernt aus Belohnung für ihre Züge, das ist bestärkendes Lernen." },
   { t: "mc", q: "Welches Verfahren lernt nicht aus Daten?", o: ["Minimax", "Perzeptron", "Mehrschichtiges Perzeptron", "Neuronales Netz"], a: 0, s: "Minimax sucht nur und bewertet, es lernt nichts." }
  ] },
- 2: { points: ["z = w₁·x₁ + w₂·x₂, dann y = 1, wenn z ≥ θ.", "Bei z = θ kommt 1 heraus.", "UND: θ zwischen 1 und 2, ODER: θ zwischen 0 und 1 (bei Gewichten 1)."], q: [
+ 2: { points: ["z = w₁·x₁ + w₂·x₂, dann out = 1, wenn z ≥ θ.", "Bei z = θ kommt 1 heraus.", "UND: θ zwischen 1 und 2, ODER: θ zwischen 0 und 1 (bei Gewichten 1)."], q: [
   { t: "num", q: "x = (1, 1), w₁ = 0,5, w₂ = 0,25. Wie groß ist z?", a: 0.75, s: "z = 0,5 + 0,25 = 0,75" },
-  { t: "num", q: "Gleiches Perzeptron mit θ = 0,75. Ausgabe y?", a: 1, s: "z = θ, und weil „größer oder gleich“ gilt, ist y = 1." },
+  { t: "num", q: "Gleiches Perzeptron mit θ = 0,75. Ausgabe out?", a: 1, s: "z = θ, und weil „größer oder gleich“ gilt, ist out = 1." },
   { t: "mc", q: "w₁ = w₂ = 1. Welcher Schwellwert ergibt ODER?", o: ["θ = 1", "θ = 1,5", "θ = 2,5", "θ = 3"], a: 0, s: "Mit θ = 1 reicht schon eine Eins (z = 1 ≥ 1)." }
  ] },
  3: { points: ["Bias w₀ = −θ, der Bias-Eingang ist immer 1.", "Trenngerade: y = −(w₁/w₂)·x − w₀/w₂.", "XOR ist nicht linear separierbar."], q: [
@@ -418,10 +418,10 @@ export const INF_REVIEW: Record<number, Review> = {
   { t: "num", q: "Gleiches Perzeptron. Wie groß ist b?", a: 0.5, s: "b = −w₀/w₂ = 2/4 = 0,5" },
   { t: "mc", q: "Warum kann ein Perzeptron XOR nicht?", o: ["Die Klassen sind nicht durch eine Gerade trennbar", "Es fehlt der Bias", "Die Lernrate ist zu klein", "XOR braucht Softmax"], a: 0, s: "Ein Perzeptron zieht nur eine Gerade, XOR bräuchte zwei." }
  ] },
- 4: { points: ["e = y − ŷ.", "Δwᵢ = α·e·xᵢ und Δw₀ = α·e.", "Schluss, wenn eine Epoche ohne Fehler durchläuft."], q: [
-  { t: "num", q: "α = 0,5, y = 1, ŷ = 0, x₁ = 1, altes w₁ = −0,2. Neues w₁?", a: 0.3, s: "Δw₁ = 0,5·1·1 = 0,5, also w₁ = −0,2 + 0,5 = 0,3." },
-  { t: "num", q: "α = 0,1, y = 0, ŷ = 1. Wie groß ist Δw₀?", a: -0.1, s: "e = −1, Δw₀ = 0,1·(−1) = −0,1." },
-  { t: "mc", q: "ŷ = y. Was passiert mit den Gewichten?", o: ["Sie bleiben gleich", "Sie werden größer", "Sie werden kleiner", "Sie werden 0"], a: 0, s: "Der Fehler ist 0, also ist jede Änderung 0." }
+ 4: { points: ["e = t − out.", "Δwᵢ = α·error·xᵢ und Δw₀ = α·error.", "Schluss, wenn eine Epoche ohne Fehler durchläuft."], q: [
+  { t: "num", q: "α = 0,5, t = 1, out = 0, x₁ = 1, altes w₁ = −0,2. Neues w₁?", a: 0.3, s: "Δw₁ = 0,5·1·1 = 0,5, also w₁ = −0,2 + 0,5 = 0,3." },
+  { t: "num", q: "α = 0,1, t = 0, out = 1. Wie groß ist Δw₀?", a: -0.1, s: "error = −1, Δw₀ = 0,1·(−1) = −0,1." },
+  { t: "mc", q: "out = t. Was passiert mit den Gewichten?", o: ["Sie bleiben gleich", "Sie werden größer", "Sie werden kleiner", "Sie werden 0"], a: 0, s: "Der Fehler ist 0, also ist jede Änderung 0." }
  ] },
  5: { points: ["ReLU(z) = max(0, z), σ(z) = 1/(1 + e⁻ᶻ).", "Softmax: eᶻ durch die Summe aller eᶻ, Summe 1.", "Schicht für Schicht rechnen."], q: [
   { t: "num", q: "ReLU(−0,4) = ?", a: 0, s: "Negativ wird 0." },
@@ -431,7 +431,7 @@ export const INF_REVIEW: Record<number, Review> = {
  6: { points: ["Kopfzeile: OPERATION name(param: Typ): Rückgabetyp.", "Heaviside im Code: WENN z >= 0.", "softmaxAlle: erst Summe, dann teilen."], q: [
   { t: "num", q: "vorhersage(0, 1, 0,5, 1, −1) mit Heaviside. Rückgabe?", a: 0, s: "z = 0,5 + 0 − 1 = −0,5 < 0, also 0." },
   { t: "num", q: "berechneNettoinput([2, 1], [0,5; 0,5], −1) = ?", a: 0.5, s: "1 + 0,5 − 1 = 0,5" },
-  { t: "mc", q: "Welcher Rückgabetyp passt zu vorhersage mit Heaviside?", o: ["GZ", "Liste<FKZ>", "Text", "Liste<GZ>"], a: 0, s: "Es kommt 0 oder 1 heraus, also eine Ganzzahl." }
+  { t: "mc", q: "Welcher Rückgabetyp passt zu vorhersage mit Heaviside?", o: ["GZ", "Liste&lt;FKZ&gt;", "Text", "Liste&lt;GZ&gt;"], a: 0, s: "Es kommt 0 oder 1 heraus, also eine Ganzzahl." }
  ] }
 };
 
@@ -445,22 +445,22 @@ export const INF_TIPS: Record<string, string> = {
  "3.0": "Bias-Eingang ist 1: z = w₀ + w₁·x₁ + w₂·x₂", "3.1": "H(z) ist 1, wenn z ≥ 0.", "3.2": "0,5 · 0,4 = 0,2", "3.3": "Ist −0,1 mindestens 0?", "3.4": "w₀ = −θ",
  "3.5": "Schau in die Definition: z ≥ 0.", "3.6": "z = 0 setzen und nach y umstellen.", "3.7": "b = −w₀/w₂", "3.8": "Setz x = 4 und y = 1 in z ein.", "3.9": "m = −w₁/w₂, und w₂ ist negativ.",
  "3.10": "Umstellen: 2y = x − 2", "3.11": "Zeichne die vier Punkte und versuch eine Gerade.", "3.12": "Eine Gerade, zwei Seiten.", "3.13": "Was wird aus b, wenn w₀ = 0 ist?", "3.14": "Wo liegen die 1-Punkte bei XOR?",
- "4.0": "e = y − ŷ", "4.1": "Δw₁ = α·e·x₁", "4.2": "Altes Gewicht plus Änderung.", "4.3": "Der Bias-Eingang ist 1.", "4.4": "Erst z mit den alten Gewichten.",
- "4.5": "e = 1, x₁ = 1, α = 0,2", "4.6": "Δw₀ = α·e", "4.7": "x₂ = 1 wie x₁.", "4.8": "Hier ist e = 0 − 1 = −1.", "4.9": "Was ist α·e·0?",
- "4.10": "y − ŷ = 0", "4.11": "Große Schritte schießen über das Ziel.", "4.12": "Was ist eine Epoche?", "4.13": "Ist XOR linear separierbar?", "4.14": "Startwerte, Schleife, Fehler, Update, Abbruch.",
+ "4.0": "e = t − out", "4.1": "Δw₁ = α·error·x₁", "4.2": "Altes Gewicht plus Änderung.", "4.3": "Der Bias-Eingang ist 1.", "4.4": "Erst z mit den alten Gewichten.",
+ "4.5": "error = 1, x₁ = 1, α = 0,2", "4.6": "Δw₀ = α·error", "4.7": "x₂ = 1 wie x₁.", "4.8": "Hier ist error = 0 − 1 = −1.", "4.9": "Was ist α·error·0?",
+ "4.10": "t − out = 0", "4.11": "Große Schritte schießen über das Ziel.", "4.12": "Was ist eine Epoche?", "4.13": "Ist XOR linear separierbar?", "4.14": "Startwerte, Schleife, Fehler, Update, Abbruch.",
  "5.0": "max(0, z)", "5.1": "Positive Werte bleiben.", "5.2": "e⁰ = 1", "5.3": "e^(−1) ≈ 0,368", "5.4": "e^(2) ≈ 7,389",
  "5.5": "Was passiert für sehr große und sehr kleine z?", "5.6": "e¹ und e³ ausrechnen, dann e³ durch die Summe.", "5.7": "e¹ durch die Summe.", "5.8": "Alle e⁰ sind 1.", "5.9": "Man teilt jeden Wert durch die Summe aller.",
  "5.10": "Bias + 0,4·1 + (−0,6)·0,5", "5.11": "Bias + 0,3·1 + 0,8·0,5, dann ReLU.", "5.12": "Bias + 1,0·0,3 + (−0,5)·0,2", "5.13": "1/(1 + e^(−0,3))", "5.14": "Mehrere Klassen, Summe 1.",
  "5.15": "Denk an ODER und UND in der verdeckten Schicht.", "5.16": "Was braucht ein Netz außer einer Schicht noch zum Lernen?", "5.17": "Erst ReLU auf beide verdeckten Neuronen, dann Bias + Gewicht·Aktivierung.", "5.18": "ReLU(−0,3) = 0, also fällt der zweite Teil weg.", "5.19": "e^0,5 durch (e^0,5 + e^−0,4).", "5.20": "Was macht ReLU aus negativen Zahlen?",
  "6.0": "z = w0 + w1·input1 + w2·input2", "6.1": "Erst Produkte addieren, dann Bias dazu.", "6.2": "z ausrechnen, dann max(0, z).", "6.3": "Alle e⁰ sind 1.", "6.4": "Was ist H(0)?",
- "6.5": "Was steht im Nenner der Softmax-Formel?", "6.6": "Kopfzeile, z, WENN, zwei Rückgaben.", "6.7": "summe := 0, dann Schleife über alle i.", "6.8": "Wie vorhersage, aber Rückgabe z oder 0.", "6.9": "Erste Schleife Summe, zweite Schleife teilen."
+ "6.5": "Was steht im Nenner der Softmax-Formel?", "6.6": "Kopfzeile, z, WENN, zwei Rückgaben.", "6.7": "summe ← 0, dann Schleife über alle i.", "6.8": "Wie vorhersage, aber Rückgabe z oder 0.", "6.9": "Erste Schleife Summe, zweite Schleife teilen."
 };
 
 export const INF_REVIEW_TIPS: Record<string, string> = {
  "1.0": "Wer hat die Antworten eingetragen?", "1.1": "Woraus lernt die KI hier?", "1.2": "Welches Verfahren sucht nur?",
  "2.0": "0,5 + 0,25", "2.1": "Gleich zählt mit.", "2.2": "Eine Eins muss reichen.",
  "3.0": "m = −w₁/w₂", "3.1": "b = −w₀/w₂", "3.2": "Wie viele Geraden kann ein Perzeptron ziehen?",
- "4.0": "Δw₁ = α·e·x₁", "4.1": "e = 0 − 1", "4.2": "Der Fehler ist 0.",
+ "4.0": "Δw₁ = α·error·x₁", "4.1": "error = 0 − 1", "4.2": "Der Fehler ist 0.",
  "5.0": "max(0, z)", "5.1": "e¹ ≈ 2,718", "5.2": "Beide gleich groß.",
  "6.0": "0,5 − 1", "6.1": "2·0,5 + 1·0,5 − 1", "6.2": "0 oder 1"
 };
@@ -471,10 +471,10 @@ export const INF_EXAM: ExamTask[] = [
  { n: 3, title: "Perzeptron berechnen", p: 4, q: "Ein Perzeptron mit Heaviside-Funktion hat w₀ = −0,2, w₁ = 0,7, w₂ = −0,4. Eingaben: x₁ = 1, x₂ = 1,5. Berechnen Sie z und H(z).", s: "z = −0,2 + 0,7·1 + (−0,4)·1,5 = −0,2 + 0,7 − 0,6 = −0,1 (3 P). H(−0,1) = 0 (1 P)." },
  { n: 4, title: "Mehrschichtiges Perzeptron", p: 7, q: "Eingaben x₁ = 1, x₂ = 0,5. Verdeckte Schicht mit ReLU: Neuron 1 hat Bias 0,4 und Gewichte −0,5 (von x₁) und 0,6 (von x₂). Neuron 2 hat Bias −0,2 und Gewichte 0,8 und 0,3. Ausgabeneuron mit Sigmoid: Bias −0,3, Gewicht 0,5 von Neuron 1 und 0,4 von Neuron 2. Berechnen Sie schrittweise die Ausgabe.", s: "Neuron 1: z = 0,4 − 0,5 + 0,3 = 0,2, ReLU = 0,2 (2 P).<br>Neuron 2: z = −0,2 + 0,8 + 0,15 = 0,75, ReLU = 0,75 (2 P).<br>Ausgang: z = −0,3 + 0,5·0,2 + 0,4·0,75 = −0,3 + 0,1 + 0,3 = 0,1 (2 P). σ(0,1) = 1/(1 + e⁻⁰·¹) ≈ 0,525 (1 P)." },
  { n: 5, title: "Trenngerade", p: 4, q: "Ein Perzeptron klassifiziert Punkte (x | y) mit w₀ = −1, w₁ = 3, w₂ = 2. Bestimmen Sie die Trenngerade in der Form y = m·x + b und geben Sie an, in welche Klasse der Punkt (1 | 1) fällt.", s: "−1 + 3x + 2y = 0, also 2y = −3x + 1 und y = −1,5x + 0,5 (3 P). Punkt (1|1): z = −1 + 3 + 2 = 4 ≥ 0, Klasse 1 (1 P)." },
- { n: 6, title: "Softmax", p: 4, q: "Drei Ausgabeneuronen haben die Nettoinputs z₁ = 0,5, z₂ = 1,5 und z₃ = −1. Berechnen Sie die Softmax-Aktivierungen auf zwei Nachkommastellen. (e^0,5 ≈ 1,65; e^1,5 ≈ 4,48; e^−1 ≈ 0,37)", s: "Summe 1,65 + 4,48 + 0,37 = 6,50 (1 P). softmax(z₁) ≈ 0,25, softmax(z₂) ≈ 0,69, softmax(z₃) ≈ 0,06 (3 P). Probe: Summe 1." },
+ { n: 6, title: "Softmax", p: 4, q: "Drei Ausgabeneuronen haben die Nettoinputs z₁ = 0,5, z₂ = 1,5 und z₃ = −1. Berechnen Sie die Softmax-Aktivierungen auf zwei Nachkommastellen. (e^0,5 ≈ 1,65; e^1,5 ≈ 4,48; e^−1 ≈ 0,37)", s: "Summe 1,65 + 4,48 + 0,37 = 6,50 (1 P). Softmax(z₁) ≈ 0,25, Softmax(z₂) ≈ 0,69, Softmax(z₃) ≈ 0,06 (3 P). Probe: Summe 1." },
  { n: 7, title: "MLP mit ReLU und Softmax", p: 7, q: "Eingaben x₁ = 1, x₂ = 0,5. Verdeckte Schicht mit ReLU: Neuron 1 hat Bias 0,2 und Gewichte 0,6 (von x₁) und −0,4 (von x₂). Neuron 2 hat Bias −0,5 und Gewichte 0,3 und 0,2. Zwei Ausgabeneuronen mit Softmax: Ausgang 1 hat Bias 0,1 und Gewichte 0,5 (von Neuron 1) und 0,8 (von Neuron 2), Ausgang 2 hat Bias −0,3 und Gewichte 1,0 und −0,6. Berechnen Sie die Nettoinputs und die Softmax-Aktivierungen der beiden Ausgabeneuronen. (Hilfe: e^0,4 ≈ 1,49; e^0,3 ≈ 1,35)", s: "Neuron 1: z = 0,2 + 0,6 − 0,2 = 0,6, ReLU = 0,6. Neuron 2: z = −0,5 + 0,3 + 0,1 = −0,1, ReLU = 0 (2 P).<br>Ausgang 1: z = 0,1 + 0,5·0,6 + 0,8·0 = 0,4. Ausgang 2: z = −0,3 + 1,0·0,6 − 0,6·0 = 0,3 (2 P).<br>Summe 1,49 + 1,35 = 2,84. softmax₁ ≈ 0,52, softmax₂ ≈ 0,48 (3 P). Probe: Summe 1." },
- { n: 8, title: "Pseudocode", p: 5, q: "a) Implementieren Sie vorhersageReLU(input1: FKZ, input2: FKZ, w0: FKZ, w1: FKZ, w2: FKZ): FKZ.<br>b) Implementieren Sie berechneNettoinput(inputs: Liste&lt;FKZ&gt;, gewichte: Liste&lt;FKZ&gt;, bias: FKZ): FKZ.", s: "a) z := w0 + w1 * input1 + w2 * input2; WENN z > 0 DANN RÜCKGABE z SONST RÜCKGABE 0 (2 P).<br>b) summe := 0; FÜR i := 0 BIS länge(inputs) − 1: summe := summe + inputs[i] * gewichte[i]; RÜCKGABE summe + bias (3 P)." },
- { n: 9, title: "Zusatz: Lernregel", p: 4, q: "Ein Perzeptron mit Heaviside-Funktion hat w₀ = 0,1, w₁ = −0,5, w₂ = 0,3. Trainingsbeispiel: x₁ = 1, x₂ = 0, richtige Ausgabe y = 1. Lernrate α = 0,25. Führen Sie einen Lernschritt durch.", s: "z = 0,1 − 0,5 + 0 = −0,4, also ŷ = 0, e = 1 (1 P).<br>Δw₀ = 0,25, Δw₁ = 0,25·1·1 = 0,25, Δw₂ = 0,25·1·0 = 0 (2 P).<br>Neu: w₀ = 0,35, w₁ = −0,25, w₂ = 0,3 (1 P)." }
+ { n: 8, title: "Pseudocode", p: 5, q: "a) Implementieren Sie vorhersageReLU(input1: FKZ, input2: FKZ, w0: FKZ, w1: FKZ, w2: FKZ): FKZ.<br>b) Implementieren Sie berechneNettoinput(inputs: Liste&lt;FKZ&gt;, gewichte: Liste&lt;FKZ&gt;, bias: FKZ): FKZ.", s: "a) z ← w0 + w1 * input1 + w2 * input2; WENN z > 0 → RÜCKGABE z, SONST → RÜCKGABE 0, ENDE WENN (2 P).<br>b) summe ← 0; FÜR i ← 0 BIS inputs.anzahlElemente() − 1 SCHRITT 1: summe ← summe + inputs[i] * gewichte[i]; RÜCKGABE summe + bias (3 P)." },
+ { n: 9, title: "Zusatz: Lernregel", p: 4, q: "Ein Perzeptron mit Heaviside-Funktion hat w₀ = 0,1, w₁ = −0,5, w₂ = 0,3. Trainingsbeispiel: x₁ = 1, x₂ = 0, Zielwert t = 1. Lernrate α = 0,25. Führen Sie einen Lernschritt durch.", s: "z = 0,1 − 0,5 + 0 = −0,4, also out = 0, error = 1 (1 P).<br>Δw₀ = 0,25, Δw₁ = 0,25·1·1 = 0,25, Δw₂ = 0,25·1·0 = 0 (2 P).<br>Neu: w₀ = 0,35, w₁ = −0,25, w₂ = 0,3 (1 P)." }
 ];
 
 export const INF_EXAM_TIPS: Record<string, string> = {
@@ -486,17 +486,17 @@ export const INF_EXAM_TIPS: Record<string, string> = {
  6: "Alle drei e-Werte addieren, dann jeden durch die Summe teilen.",
  7: "Erst ReLU auf beide verdeckten Neuronen. Neuron 2 wird 0, dann zählt nur Neuron 1.",
  8: "Kopfzeile, Formel, Rückgabe. Bei b) eine Schleife über i.",
- 9: "Erst ŷ mit den alten Gewichten. x₂ = 0 heißt Δw₂ = 0."
+ 9: "Erst out mit den alten Gewichten. x₂ = 0 heißt Δw₂ = 0."
 };
 
 export const INF_FORMULAS: FormulaGroup[] = [
- ["Perzeptron", [["Nettoinput", "z = w₁·x₁ + w₂·x₂ + … + wₙ·xₙ"], ["Mit Schwellwert", "y = 1, wenn z ≥ θ, sonst 0"], ["Mit Bias (x₀ = 1)", "z = w₀ + w₁·x₁ + … + wₙ·xₙ, y = H(z)"], ["Bias und Schwellwert", "w₀ = −θ"]]],
- ["Trenngerade", [["Grenze (z = 0)", "w₀ + w₁·x + w₂·y = 0"], ["Umgestellt", "y = −(w₁/w₂)·x − w₀/w₂"], ["Steigung", "m = −w₁/w₂"], ["Achsenabschnitt", "b = −w₀/w₂"]]],
- ["Aktivierungsfunktionen", [["Heaviside", "H(z) = 1 für z ≥ 0, sonst 0"], ["ReLU", "ReLU(z) = max(0, z)"], ["Sigmoid", "σ(z) = 1 / (1 + e⁻ᶻ)"], ["Softmax", "e^(z_k) / Σ e^(zᵢ)"]]],
- ["Lernregel", [["Fehler", "e = y − ŷ"], ["Gewichte", "Δwᵢ = α·(y − ŷ)·xᵢ"], ["Bias", "Δw₀ = α·(y − ŷ)"], ["Update", "wᵢ := wᵢ + Δwᵢ"]]],
- ["Mehrschichtiges Netz", [["Eingabe", "a⁽¹⁾ = x"], ["Rohinput", "z⁽ˡ⁾ = W⁽ˡ⁻¹⁾·a⁽ˡ⁻¹⁾ + b⁽ˡ⁻¹⁾"], ["Aktivierung", "a⁽ˡ⁾ = g(z⁽ˡ⁾)"], ["Ausgabe", "ŷ = a⁽ᴸ⁾"]]]
+ ["Perzeptron · Formelsammlung S. 28", [["Gewichtete Summe (S. 28)", "z = w₁·x₁ + … + wₙ·xₙ = Σ wᵢ·xᵢ (i = 1 bis n)"], ["Mit Schwellwert θ (S. 28)", "out = 1, wenn z ≥ θ, sonst 0"], ["Mit Bias-Neuron x₀ = 1 (S. 28)", "z = Σ wᵢ·xᵢ (i = 0 bis n), out = 1, wenn z ≥ 0, sonst 0"], ["Bias und Schwellwert (S. 28)", "w₀ = b = −θ"]]],
+ ["Lernregel · Formelsammlung S. 28", [["Fehler (S. 28)", "error = t − out"], ["Gewicht anpassen (S. 28)", "wₖ ← wₖ + α · error · xₖ"], ["Bias (x₀ = 1)", "w₀ ← w₀ + α · error"], ["Lernrate (S. 28)", "α > 0"]]],
+ ["Aktivierungsfunktionen · Formelsammlung S. 29", [["Heaviside (S. 29)", "H(z) = 1, wenn z ≥ 0, sonst 0"], ["Sigmoid (S. 29)", "σ(z) = 1 / (1 + e^(−z))"], ["ReLU (S. 29)", "ReLU(z) = z, wenn z ≥ 0, sonst 0, also ReLU(z) = max(0, z)"], ["Softmax (S. 29, Beispiel S. 30)", "Softmax(zₖ) = e^(zₖ) / Σ e^(zᵢ) (i = 1 bis n)"]]],
+ ["Mehrlagiges Perzeptron · Formelsammlung S. 29", [["Aufbau (S. 29)", "out eines Neurons ist Input für das nächste Neuron"], ["Zählweise (S. 29)", "Input-Schicht zählt nicht: Eingabe, eine verdeckte Schicht, Ausgabe = 2-lagig"], ["Jedes Neuron", "z = Σ wᵢ·xᵢ, dann out = H(z), σ(z), ReLU(z) oder Softmax"]]],
+ ["Trenngerade · nicht in der Formelsammlung", [["Grenze (z = 0)", "w₀ + w₁·x + w₂·y = 0"], ["Umgestellt", "y = −(w₁/w₂)·x − w₀/w₂"], ["Steigung", "m = −w₁/w₂"], ["Achsenabschnitt", "−w₀/w₂ (Achtung: in der Formelsammlung heißt b der Bias)"]]],
+ ["Pseudocode · Formelsammlung S. 14 bis 18", [["Zuweisung (S. 14)", "x ← wert (auch := oder =)"], ["Auswahl (S. 14)", "WENN … SONST … ENDE WENN"], ["Zählschleife (S. 14)", "FÜR i←0 BIS n SCHRITT 1 … ENDE FÜR"], ["Schleife über Liste (S. 14)", "FÜR element IN liste … ENDE FÜR"], ["Datentypen (S. 15)", "GZ, FKZ, Boolean, Text, Liste&lt;FKZ&gt;"], ["Liste (S. 15, 16)", "anzahlElemente(), gibInhalt(i) bzw. liste[i], anhaengen(x), NEU Liste&lt;FKZ&gt;() bzw. []"], ["Operation (S. 18)", "OPERATION name(p: Typ): Rückgabetyp … RÜCKGABE wert"]]]
 ];
+export const INF_SYMBOLS: [string, string][] = [["xᵢ", "Input (Eingabe)"], ["wᵢ", "Gewicht"], ["x₀ = 1, w₀", "Bias-Neuron und Bias-Gewicht, w₀ = b = −θ (S. 28)"], ["θ", "Schwellwert (S. 28)"], ["z", "gewichtete Summe der Inputs (S. 28)"], ["out", "Output des Neurons (S. 28)"], ["t", "Zielwert aus den Trainingsdaten, engl. target (S. 28)"], ["error", "Fehler t − out (S. 28)"], ["α", "Lernrate, α > 0 (S. 28)"], ["H, σ, ReLU, Softmax", "Aktivierungsfunktionen (S. 29)"], ["Epoche", "ein Durchgang durch alle Trainingsdaten"], ["FKZ, GZ", "Fließkommazahl, Ganzzahl (S. 15)"]];
 
-export const INF_SYMBOLS: [string, string][] = [["xᵢ", "Eingabe"], ["wᵢ", "Gewicht"], ["w₀, b", "Bias (Eingang immer 1)"], ["θ", "Schwellwert"], ["z", "Nettoinput, Rohinput"], ["a", "Aktivierung (Ausgabe eines Neurons)"], ["ŷ", "Ausgabe des Netzes"], ["y", "richtige Antwort (Label)"], ["α", "Lernrate"], ["Epoche", "ein Durchgang durch alle Trainingsdaten"], ["FKZ, GZ", "Fließkommazahl, Ganzzahl"]];
-
-export const INF_KILLERS: string[] = ["H(0) = 1, nicht 0", "Bias vergessen oder nicht mit 1 multipliziert", "Minus bei m = −w₁/w₂ oder b = −w₀/w₂ vergessen", "ReLU einer negativen Zahl ist 0", "Softmax durch die Summe der z-Werte statt der e-Werte geteilt", "In der Lernregel ŷ − y statt y − ŷ", "Lernart genannt, aber nicht begründet", "Im Pseudocode > statt >= bei Heaviside"];
+export const INF_KILLERS: string[] = ["H(0) = 1, nicht 0", "Bias vergessen oder nicht mit x₀ = 1 multipliziert", "Minus bei m = −w₁/w₂ oder −w₀/w₂ vergessen", "ReLU einer negativen Zahl ist 0", "Softmax durch die Summe der z-Werte statt der e-Werte geteilt", "In der Lernregel out − t statt error = t − out", "Lernart genannt, aber nicht begründet", "Im Pseudocode > statt >= bei Heaviside", "Im Pseudocode ENDE WENN oder ENDE FÜR vergessen"];

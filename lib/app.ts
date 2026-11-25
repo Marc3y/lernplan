@@ -6,6 +6,7 @@ import { TIPS as PHYS_TIPS, REVIEW_TIPS as PHYS_REVIEW_TIPS, EXAM_TIPS as PHYS_E
 import { V } from "./data/videos";
 import { INF_DAYS, INF_LESSONS, INF_REVIEW, INF_TIPS, INF_REVIEW_TIPS, INF_EXAM, INF_EXAM_TIPS, INF_FORMULAS, INF_SYMBOLS, INF_KILLERS } from "./data/informatik";
 import { MAT_DAYS, MAT_LESSONS, MAT_REVIEW, MAT_TIPS, MAT_REVIEW_TIPS, MAT_EXAM, MAT_EXAM_TIPS, MAT_META } from "./data/mathe";
+import { WL_DAYS, WL_LESSONS, WL_REVIEW, WL_TIPS, WL_REVIEW_TIPS, WL_EXAM, WL_EXAM_TIPS, WL_META } from "./data/wirtschaft";
 import type { Progress, SubjectProgress, View, Unit, Solver, PersonRow, Day, ExamTask, Review, Lesson, CourseMeta } from "./types";
 
 const ON_CLAUDE = !!(window.claude && window.claude.use);
@@ -15,24 +16,26 @@ const WHO_KEY = "schwingungen15.who";
 const OLD_KEY = "schwingungen15.v1";
 const keyFor = p => "schwingungen15.v2." + p;
 const blankSub = (): SubjectProgress => ({ b: {}, c: {}, x: {}, p: {}, r: {}, f: [] });
-const blank = (): Progress => ({ b: {}, c: {}, x: {}, p: {}, r: {}, f: [], ts: 0, inf: blankSub(), mat: blankSub() });
+const blank = (): Progress => ({ b: {}, c: {}, x: {}, p: {}, r: {}, f: [], ts: 0, inf: blankSub(), mat: blankSub(), wl: blankSub() });
 function fill(st): Progress {
   const out = Object.assign(blank(), st || {});
   out.inf = Object.assign(blankSub(), out.inf || {});
   out.mat = Object.assign(blankSub(), out.mat || {});
+  out.wl = Object.assign(blankSub(), out.wl || {});
   return out;
 }
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 
-type Subject = "phys" | "inf" | "mat";
-type Course = "inf" | "mat";
+type Subject = "phys" | "inf" | "mat" | "wl";
+type Course = "inf" | "mat" | "wl";
 const COURSES = {
   phys: { DAYS: PHYS_DAYS, EXAM: PHYS_EXAM, REVIEW: PHYS_REVIEW, LESSONS: PHYS_LESSONS, TIPS: PHYS_TIPS, REVIEW_TIPS: PHYS_REVIEW_TIPS, EXAM_TIPS: PHYS_EXAM_TIPS },
   inf: { DAYS: INF_DAYS, EXAM: INF_EXAM, REVIEW: INF_REVIEW, LESSONS: INF_LESSONS, TIPS: INF_TIPS, REVIEW_TIPS: INF_REVIEW_TIPS, EXAM_TIPS: INF_EXAM_TIPS },
   mat: { DAYS: MAT_DAYS, EXAM: MAT_EXAM, REVIEW: MAT_REVIEW, LESSONS: MAT_LESSONS, TIPS: MAT_TIPS, REVIEW_TIPS: MAT_REVIEW_TIPS, EXAM_TIPS: MAT_EXAM_TIPS },
+  wl: { DAYS: WL_DAYS, EXAM: WL_EXAM, REVIEW: WL_REVIEW, LESSONS: WL_LESSONS, TIPS: WL_TIPS, REVIEW_TIPS: WL_REVIEW_TIPS, EXAM_TIPS: WL_EXAM_TIPS },
 };
-const COURSE_KEYS: Course[] = ["inf", "mat"];
+const COURSE_KEYS: Course[] = ["inf", "mat", "wl"];
 const SUBJ_KEY = "schwingungen15.subj";
 let SUBJ: Subject = "phys";
 let DAYS: Day[], EXAM: ExamTask[], REVIEW: Record<number, Review>, LESSONS: Record<number, Lesson[]>, TIPS: Record<string, string>, REVIEW_TIPS: Record<string, string>, EXAM_TIPS: Record<string, string>;
@@ -41,7 +44,7 @@ function useCourse(s: Subject) {
   ({ DAYS, EXAM, REVIEW, LESSONS, TIPS, REVIEW_TIPS, EXAM_TIPS } = COURSES[s]);
 }
 const savedSubj = lsGet(SUBJ_KEY);
-useCourse(savedSubj === "inf" || savedSubj === "mat" ? savedSubj : "phys");
+useCourse(savedSubj === "inf" || savedSubj === "mat" || savedSubj === "wl" ? savedSubj : "phys");
 function loadLocal(p) {
   let raw = lsGet(keyFor(p));
   if (!raw && p === "Marcus") raw = lsGet(OLD_KEY);
@@ -301,7 +304,7 @@ window.addEventListener("error", ev => toast("Fehler: " + (ev.message || "unbeka
 window.addEventListener("unhandledrejection", ev => { const r = ev.reason; if (r && (r.code === "cancelled" || r.name === "AbortError")) return; });
 
 function makeNav() {
-  if (SUBJ !== "phys") return [["start", "Übersicht", "Ziel und Fortschritt"]].concat(DAYS.map(d => ["tag" + d.n, W() + " " + d.n, d.short])).concat([["klausur", "Probeklausur", MT().navExam], ["formeln", "Formeln", MT().formulasNav], ["fehler", "Fehlerheft", "Deine Fehler, ein Satz je Fehler"], ["regeln", "Spielregeln", "So holt ihr die Punkte"]]);
+  if (SUBJ !== "phys") return [["start", "Übersicht", "Ziel und Fortschritt"]].concat(DAYS.map(d => ["tag" + d.n, W() + " " + d.n, d.short])).concat([["klausur", "Probeklausur", MT().navExam], ["formeln", SUBJ === "wl" ? "Merkblatt" : "Formeln", MT().formulasNav], ["fehler", "Fehlerheft", "Deine Fehler, ein Satz je Fehler"], ["regeln", "Spielregeln", "So holt ihr die Punkte"]]);
   return [["start", "Übersicht", "Countdown und Fortschritt"]].concat(DAYS.map(d => ["tag" + d.n, "Tag " + d.n, d.wd + " · " + d.short])).concat([["klausur", "Probeklausur", "90 min, 70 Punkte"], ["formeln", "Formeln", "Alles zum Auswendiglernen"], ["fehler", "Fehlerheft", "Deine Fehler, ein Satz je Fehler"], ["regeln", "Spielregeln", "So lernt ihr zu zweit"]]);
 }
 let NAV: string[][] = [];
@@ -935,7 +938,7 @@ const INF_META: CourseMeta = {
   sugs: ["Erklär mir das Perzeptron, als wäre ich in der 9. Klasse.", "Warum kann ein Perzeptron XOR nicht?", "Gib mir eine neue Aufgabe zur Trenngeraden mit Lösung zum Aufklappen.", "Frag mich die Aktivierungsfunktionen ab, eine Frage nach der anderen."],
   errExample: "„Bei der Trenngeraden das Minus vergessen“"
 };
-const META: Record<Course, CourseMeta> = { inf: INF_META, mat: MAT_META };
+const META: Record<Course, CourseMeta> = { inf: INF_META, mat: MAT_META, wl: WL_META };
 let sample = null, turns = [], ctl = null, busy = false;
 let aiOffText = "Der KI-Tutor läuft über Claude und funktioniert, wenn du die Seite in Claude geöffnet hast (claude.ai oder die Claude-App). Dafür brauchst du keinen API-Schlüssel. Beim ersten Frage-Klick fragt Claude einmal, ob die Seite deine Claude-Nutzung verwenden darf.";
 async function serverSample(input, opts) {
@@ -1477,7 +1480,7 @@ document.addEventListener("keydown", ev => { if (ev.key === "Escape" && ncOpen()
 
 function openTarget(n) {
   const view = n.view || "start";
-  const m = view.match(/^(inf|mat):(.*)$/);
+  const m = view.match(/^(inf|mat|wl):(.*)$/);
   setSubject(m ? m[1] as Subject : "phys");
   go(m ? m[2] : view);
   requestAnimationFrame(() => requestAnimationFrame(() => {

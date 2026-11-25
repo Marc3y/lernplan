@@ -18,6 +18,7 @@ export interface Progress {
   ts: number;
   inf?: SubjectProgress;
   mat?: SubjectProgress;
+  wl?: SubjectProgress;
 }
 
 export type View = HTMLElement & { _render?: () => void; _renderPartner?: () => void };
